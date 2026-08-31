@@ -15,9 +15,9 @@ export default function SiteHeader() {
   return (
     <header className="header">
       <Link href="/" className="brand" aria-label={`${SITE.name} home`}>
-        <div className="brand-mark" aria-hidden />
+        <img className="brand-mark" src="/brand/mark.svg" alt="" width={38} height={38} />
         <span className="brand-text">
-          <span className="brand-name">GO M REALTY</span>
+          <span className="brand-name">GO-M REALTY</span>
           <span className="brand-sub">{SITE.region}</span>
         </span>
       </Link>

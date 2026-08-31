@@ -102,17 +102,7 @@ button { font: inherit; color: inherit; background: none; border: none; padding:
 }
 .brand { display: flex; align-items: center; gap: 11px; color: inherit; }
 .brand:hover { color: inherit; }
-.brand-mark {
-  width: 38px; height: 38px; border-radius: 11px; background: var(--brand);
-  display: grid; place-items: center; position: relative; overflow: hidden; flex: none;
-}
-.brand-mark::before {
-  content: ""; width: 17px; height: 17px; border-radius: 50% 50% 50% 2px;
-  transform: rotate(-45deg); border: 2.5px solid var(--lime);
-}
-.brand-mark::after {
-  content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--lime);
-}
+.brand-mark { width: 38px; height: 38px; border-radius: 11px; flex: none; display: block; }
 .brand-text { display: flex; flex-direction: column; line-height: 1; }
 .brand-name { font-weight: 700; font-size: 17px; letter-spacing: -0.03em; }
 .brand-sub { font-size: 8.5px; font-weight: 500; letter-spacing: 0.26em; color: var(--ink-label); margin-top: 5px; }
@@ -548,9 +538,7 @@ textarea.field { resize: vertical; }
 /* ------------------------------- footer -------------------------------- */
 
 .footer { border-top: 1px solid var(--line); padding: 52px var(--gutter) 30px; display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px; }
-.footer-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--brand); display: grid; place-items: center; position: relative; overflow: hidden; flex: none; }
-.footer-mark::before { content: ""; width: 14px; height: 14px; border-radius: 50% 50% 50% 2px; transform: rotate(-45deg); border: 2px solid var(--lime); }
-.footer-mark::after { content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 2.5px; background: var(--lime); }
+.footer-mark { width: 32px; height: 32px; border-radius: 9px; flex: none; display: block; }
 .footer-addr { font-size: 14px; line-height: 1.6; color: oklch(0.45 0.008 150); }
 .footer-h { font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: var(--ink-label); margin-bottom: 14px; }
 .footer-links { display: grid; gap: 8px; font-size: 14px; }

@@ -6,8 +6,8 @@ export default function SiteFooter() {
     <footer className="footer">
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-          <div className="footer-mark" aria-hidden />
-          <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: "-0.03em" }}>GO M REALTY</div>
+          <img className="footer-mark" src="/brand/mark.svg" alt="" width={32} height={32} />
+          <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: "-0.03em" }}>GO-M REALTY</div>
         </div>
         <div className="footer-addr">
           {SITE.addressLines[0]}

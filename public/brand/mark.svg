@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Go-M Realty">
+  <rect width="100" height="100" rx="27" fill="#14663B"/>
+  <g fill="none" stroke="#F4F7F3" stroke-width="7.2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- roof -->
+    <path d="M20 47.5 L50 21 L80 47.5"/>
+    <!-- chimney -->
+    <path d="M69.5 31.5 V24"/>
+    <!-- body drawn as a G: left wall, floor, right wall, then the crossbar -->
+    <path d="M30 45 V66 a8.5 8.5 0 0 0 8.5 8.5 H61.5 a8.5 8.5 0 0 0 8.5 -8.5 V57.5 H51"/>
+  </g>
+</svg>
