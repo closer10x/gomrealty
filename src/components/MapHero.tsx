@@ -375,6 +375,7 @@ export default function MapHero({ initialListings, initialSource }: Props) {
           onSelect={setSelected}
           onMoveEnd={handleMoveEnd}
           onInteract={handleInteract}
+          panelOpen={panelOpen}
         />
       </div>
 

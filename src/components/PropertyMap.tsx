@@ -14,7 +14,33 @@ type Props = {
   onMoveEnd?: (centre: { lat: number; lng: number; radiusMiles: number }) => void;
   /** Fired as soon as the user grabs the map, so the panel can get out of the way. */
   onInteract?: () => void;
+  /** Whether the listings panel is covering the left of the map. */
+  panelOpen?: boolean;
 };
+
+/** Matches .hero-panel and .nearby-rail in globals.css. */
+const PANEL_W = 452;
+const RAIL_W = 306;
+const GUTTER = 34;
+const BREAKPOINT = 900;
+
+/**
+ * The map fills the hero, but the panel and rail float on top of it. Centring a
+ * pin in the map's own viewport therefore parks it underneath one of them, so
+ * every camera move is padded by whatever is currently covering the map.
+ */
+function overlayPadding(width: number, panelOpen: boolean) {
+  if (width < BREAKPOINT) {
+    // Stacked layout: nothing overlaps the map strip.
+    return { top: 56, bottom: 24, left: 24, right: 24 };
+  }
+  return {
+    top: 96,
+    bottom: 48,
+    left: (panelOpen ? PANEL_W + GUTTER : 0) + GUTTER,
+    right: RAIL_W + GUTTER + GUTTER,
+  };
+}
 
 /**
  * CARTO's Positron basemap — free, no account or token, and already the muted
@@ -44,7 +70,14 @@ function viewportRadiusMiles(map: maplibregl.Map): number {
   return Math.min(Math.max((2 * R * Math.asin(Math.min(1, Math.sqrt(a)))) / 2, 1), 50);
 }
 
-export default function PropertyMap({ listings, selected, onSelect, onMoveEnd, onInteract }: Props) {
+export default function PropertyMap({
+  listings,
+  selected,
+  onSelect,
+  onMoveEnd,
+  onInteract,
+  panelOpen = true,
+}: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
@@ -58,6 +91,11 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd, o
   onInteractRef.current = onInteract;
 
   const userMoved = useRef(false);
+  const panelOpenRef = useRef(panelOpen);
+  panelOpenRef.current = panelOpen;
+
+  const padding = () =>
+    overlayPadding(container.current?.clientWidth ?? 1200, panelOpenRef.current);
   const moveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -158,9 +196,24 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd, o
     if (located.length > 1 && !userMoved.current) {
       const b = new maplibregl.LngLatBounds();
       located.forEach(({ l }) => b.extend([l.lng as number, l.lat as number]));
-      m.fitBounds(b, { padding: 90, maxZoom: 13, duration: 600 });
+      m.fitBounds(b, { padding: padding(), maxZoom: 13, duration: 600 });
     }
   }, [listings, selected]);
+
+  /**
+   * Bring the selected home into the part of the map you can actually see.
+   * Padded, so it lands between the panel and the rail rather than behind one.
+   */
+  useEffect(() => {
+    const m = map.current;
+    const l = listings[selected];
+    if (!m || !l || l.lat === null || l.lng === null) return;
+
+    m.easeTo({ center: [l.lng, l.lat], padding: padding(), duration: 550 });
+    // A programmatic move must not look like the user panning away.
+    userMoved.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, listings, panelOpen]);
 
   // A card above the selected pin, linking through to the listing.
   useEffect(() => {
