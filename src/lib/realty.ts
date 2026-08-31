@@ -162,6 +162,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
  */
 export function extractResults(payload: unknown): Record<string, unknown>[] {
   const paths: string[][] = [
+    ["searchResults"],
     ["data", "home_search", "results"],
     ["data", "results"],
     ["home_search", "results"],
@@ -204,9 +205,14 @@ export function normalizeListing(raw: Record<string, unknown>): Listing {
     : isRecord(loc.coordinate)
       ? loc.coordinate
       : {};
-  const primaryPhoto = isRecord(raw.primary_photo) ? raw.primary_photo : {};
+  // primary_photo / photos[] are plain URL strings here, but the upstream
+  // Realtor.com shape wraps them in { href }. Accept either.
+  const photoUrl = (v: unknown): string | null => {
+    if (typeof v === "string") return v || null;
+    if (isRecord(v) && typeof v.href === "string") return v.href;
+    return null;
+  };
   const photos = Array.isArray(raw.photos) ? raw.photos : [];
-  const firstPhoto = isRecord(photos[0]) ? photos[0] : {};
 
   const price =
     asNum(pick(raw, "list_price", "price", "list_price_min")) ??
@@ -250,13 +256,12 @@ export function normalizeListing(raw: Record<string, unknown>): Listing {
     address,
     city,
     status: status || "Active",
-    photo:
-      (pick(primaryPhoto, "href") as string | undefined) ??
-      (pick(firstPhoto, "href") as string | undefined) ??
-      null,
-    lat: asNum(pick(coord, "lat", "latitude")),
-    lng: asNum(pick(coord, "lon", "lng", "longitude")),
-    href: permalink ? `https://www.realtor.com/realestateandhomes-detail/${permalink}` : null,
+    photo: photoUrl(raw.primary_photo) ?? photoUrl(photos[0]),
+    lat: asNum(pick(coord, "lat", "latitude")) ?? asNum(pick(addr, "latitude")),
+    lng: asNum(pick(coord, "lon", "lng", "longitude")) ?? asNum(pick(addr, "longitude")),
+    href:
+      (typeof raw.href === "string" ? raw.href : null) ??
+      (permalink ? `https://www.realtor.com/realestateandhomes-detail/${permalink}` : null),
   };
 }
 

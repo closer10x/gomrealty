@@ -56,11 +56,13 @@ export async function GET(req: NextRequest) {
       : await realtyFetch("/search/bylocation", { ...query, location });
 
     const listings = normalizeListings(payload, limit);
+    const live = listings.length > 0;
     return NextResponse.json(
       {
-        source: "realtyapi",
+        source: live ? "realtyapi" : "sample",
+        ...(live ? {} : { note: "Upstream returned no parsable listings." }),
         location: zip ?? location,
-        listings: listings.length ? listings : SAMPLE_LISTINGS.slice(0, limit),
+        listings: live ? listings : SAMPLE_LISTINGS.slice(0, limit),
       },
       { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
     );
