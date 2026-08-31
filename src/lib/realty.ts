@@ -233,6 +233,8 @@ export type Listing = {
   /** Redfin needs both ids to resolve a photo via /detailsbyid. */
   propertyId?: string | null;
   listingId?: string | null;
+  /** On-site detail page slug, when this listing has one. */
+  slug?: string | null;
   price: number | null;
   priceShort: string;
   priceFull: string;
@@ -365,9 +367,21 @@ export function normalizeListing(raw: Record<string, unknown>): Listing {
     .join(" · ");
 
   const permalink = pick(raw, "permalink");
+  const propertyId = pick(raw, "property_id");
+
+  const slugBase = [line, city, stateCode].filter(Boolean).join(" ");
+  const slug = propertyId
+    ? `${slugBase
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 70)}-rc-${propertyId}`
+    : null;
 
   return {
     id: String(pick(raw, "property_id", "listing_id", "id") ?? line ?? Math.random()),
+    propertyId: propertyId ? String(propertyId) : null,
+    slug,
     price,
     priceShort: formatPriceShort(price),
     priceFull: formatPriceFull(price),

@@ -138,6 +138,8 @@ const shell = (heading: string, rows: [string, string][], footer: string) => `
 
 type BookingMail = {
   id: string;
+  /** Absolute URL of the cancellation page, when NEXT_PUBLIC_SITE_URL is set. */
+  cancelUrl?: string | null;
   start: string;
   end: string;
   summary: string;
@@ -176,7 +178,11 @@ export async function sendBookingConfirmation(b: BookingMail): Promise<SendResul
     html: shell(
       `You're on the calendar, ${b.fullName.split(" ")[0]}`,
       rows,
-      `Need to move it or cancel? Just reply to this email, or call
+      `${
+        b.cancelUrl
+          ? `Need to cancel? <a href="${b.cancelUrl}" style="color:#2f7a4d;">Cancel this call</a>. `
+          : ""
+      }To move it instead, reply to this email or call
        <a href="tel:8325147301" style="color:#2f7a4d;">832.514.7301</a>.
        The attached invite adds it to your calendar.`,
     ),
@@ -188,7 +194,8 @@ export async function sendBookingConfirmation(b: BookingMail): Promise<SendResul
       `We'll call: ${b.phone || "the number you gave us"}`,
       b.topic ? `About: ${b.topic}` : "",
       ``,
-      `Need to move it or cancel? Reply to this email or call 832.514.7301.`,
+      b.cancelUrl ? `Cancel this call: ${b.cancelUrl}` : "",
+      `To move it instead, reply to this email or call 832.514.7301.`,
     ]
       .filter(Boolean)
       .join("\n"),

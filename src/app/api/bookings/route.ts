@@ -19,6 +19,15 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 /** Postgres unique_violation — the slot was taken between render and submit. */
 const UNIQUE_VIOLATION = "23505";
 
+/**
+ * Abuse limits. The calendar is 30 days x 24 slots = 720 bookings, all of them
+ * free and unauthenticated, so without a ceiling one script can take the whole
+ * thing and the phone stops ringing. Generous enough that a real person
+ * rebooking twice never notices.
+ */
+const MAX_PER_IP_HOUR = 3;
+const MAX_PER_EMAIL_DAY = 3;
+
 const clean = (v: unknown, max: number): string | null => {
   if (typeof v !== "string") return null;
   const t = v.trim();
@@ -74,7 +83,42 @@ export async function POST(req: NextRequest) {
 
   const forwarded = req.headers.get("x-forwarded-for") ?? "";
   const ip = forwarded.split(",")[0]?.trim();
+  const ipHash = ip ? createHash("sha256").update(ip).digest("hex").slice(0, 32) : null;
   const startIso = new Date(start!).toISOString();
+
+  // Counted against confirmed rows only, so cancelling frees the allowance.
+  const since = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString();
+
+  const [byIp, byEmail] = await Promise.all([
+    ipHash
+      ? db
+          .from("bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("ip_hash", ipHash)
+          .eq("status", "confirmed")
+          .gte("created_at", since(60))
+      : Promise.resolve({ count: 0, error: null }),
+    db
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("email", email!)
+      .eq("status", "confirmed")
+      .gte("created_at", since(60 * 24)),
+  ]);
+
+  const overLimit =
+    (byIp.count ?? 0) >= MAX_PER_IP_HOUR || (byEmail.count ?? 0) >= MAX_PER_EMAIL_DAY;
+
+  if (overLimit) {
+    console.warn("[bookings] rate limited", { ipHash, email, ip: byIp.count, mail: byEmail.count });
+    return NextResponse.json(
+      {
+        error:
+          "You already have calls booked. Give us a ring on 832.514.7301 if you need another time.",
+      },
+      { status: 429 },
+    );
+  }
 
   const row = {
     starts_at: startIso,
@@ -88,7 +132,7 @@ export async function POST(req: NextRequest) {
     source_path: clean(body.sourcePath, 200),
     referrer: clean(req.headers.get("referer"), 300),
     user_agent: clean(req.headers.get("user-agent"), 400),
-    ip_hash: ip ? createHash("sha256").update(ip).digest("hex").slice(0, 32) : null,
+    ip_hash: ipHash,
   };
 
   const { data, error } = await db
@@ -117,8 +161,12 @@ export async function POST(req: NextRequest) {
   // The row is already committed, so mail is best-effort from here. Both
   // messages go out together and neither can reject the response — a booking
   // that saved is a real booking even if the mail API is having a bad day.
+  const site = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ?? "";
+  const cancelUrl = site ? `${site}/booking/cancel/${data.cancel_token as string}` : null;
+
   const mail = {
     id: data.id as string,
+    cancelUrl,
     start: startIso,
     end: slotEnd(startIso),
     summary,

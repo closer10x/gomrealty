@@ -556,15 +556,21 @@ export default function MapHero({ initialListings, initialSource }: Props) {
               >
                 {card}
               </button>
-              {l.href && (
-                <a
-                  className="nearby-open"
-                  href={l.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View listing →
-                </a>
+              {l.slug ? (
+                <Link className="nearby-open" href={`/homes/${l.slug}`}>
+                  See this home →
+                </Link>
+              ) : (
+                l.href && (
+                  <a
+                    className="nearby-open"
+                    href={l.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View on source →
+                  </a>
+                )
               )}
             </div>
           );

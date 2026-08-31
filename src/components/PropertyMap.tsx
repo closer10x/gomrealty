@@ -164,12 +164,16 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }:
     const el = document.createElement("div");
     el.className = "pin-popup";
 
-    const inner = l.href ? document.createElement("a") : document.createElement("div");
+    // Prefer our own page; fall back to the source listing when there isn't one.
+    const target = l.slug ? `/homes/${l.slug}` : l.href;
+    const inner = target ? document.createElement("a") : document.createElement("div");
     inner.className = "pin-popup-inner";
-    if (l.href && inner instanceof HTMLAnchorElement) {
-      inner.href = l.href;
-      inner.target = "_blank";
-      inner.rel = "noopener noreferrer";
+    if (target && inner instanceof HTMLAnchorElement) {
+      inner.href = target;
+      if (!l.slug) {
+        inner.target = "_blank";
+        inner.rel = "noopener noreferrer";
+      }
     }
 
     const img = document.createElement("span");
@@ -196,10 +200,10 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }:
 
     body.append(addr, specs);
 
-    if (l.href) {
+    if (target) {
       const cta = document.createElement("span");
       cta.className = "pin-popup-cta";
-      cta.textContent = "View listing \u2192";
+      cta.textContent = l.slug ? "See this home \u2192" : "View on source \u2192";
       body.appendChild(cta);
     }
 
