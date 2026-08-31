@@ -58,6 +58,11 @@ export default function MapHero({ initialListings, initialSource }: Props) {
   const listRef = useRef<HTMLDivElement | null>(null);
   /** Redfin ids already asked about, so we never re-spend a credit on one. */
   const photoAsked = useRef<Set<string>>(new Set());
+  /**
+   * Ids whose photo lookup has finished. Until then a Redfin card is *pending*,
+   * not photo-less — saying "No photo available" mid-flight is a lie.
+   */
+  const [photoDone, setPhotoDone] = useState<Set<string>>(new Set());
   /** The viewport/filter that the current page sequence belongs to. */
   const lastQueryRef = useRef<URLSearchParams | null>(null);
 
@@ -237,6 +242,14 @@ export default function MapHero({ initialListings, initialSource }: Props) {
         );
 
         if (cancelled) return;
+
+        // Mark the whole batch resolved, hit or miss.
+        setPhotoDone((prev) => {
+          const next = new Set(prev);
+          batch.forEach((l) => next.add(l.id));
+          return next;
+        });
+
         const found = resolved.filter((r): r is { id: string; photo: string } => r !== null);
         if (found.length) {
           setListings((prev) =>
@@ -258,6 +271,18 @@ export default function MapHero({ initialListings, initialSource }: Props) {
     (c: { lat: number; lng: number; radiusMiles: number }) => void load(filter, "", c),
     [filter, load],
   );
+
+  /**
+   * A Realtor listing without a photo has none. A Redfin one is only photo-less
+   * once its lookup has come back empty.
+   */
+  const photoState = (l: Listing): "has" | "pending" | "none" => {
+    if (l.photo) return "has";
+    if (l.provider === "redfin" && l.propertyId && l.listingId && !photoDone.has(l.id)) {
+      return "pending";
+    }
+    return "none";
+  };
 
   const active = listings[selected] ?? listings[0];
 
@@ -413,10 +438,12 @@ export default function MapHero({ initialListings, initialSource }: Props) {
                   onClick={() => setSelected(i)}
                 >
                   <span
-                    className="result-thumb"
+                    className={l.photo ? "result-thumb" : "result-thumb is-empty"}
                     style={l.photo ? { backgroundImage: `url(${l.photo})` } : undefined}
                     aria-hidden
-                  />
+                  >
+                    {photoState(l) === "none" && <span className="no-photo-mini">No photo</span>}
+                  </span>
                   <span className="result-body">
                     <span className="result-price" style={{ display: "block" }}>
                       {l.priceFull}
@@ -494,7 +521,10 @@ export default function MapHero({ initialListings, initialSource }: Props) {
                 className="active-photo"
                 style={l.photo ? { backgroundImage: `url(${l.photo})` } : undefined}
               >
-                {!l.photo && <span className="slot">[ listing photo ]</span>}
+                {photoState(l) === "none" && (
+                  <span className="no-photo">No photo available</span>
+                )}
+                {photoState(l) === "pending" && <span className="no-photo-pending" aria-hidden />}
                 {dist !== null && !on && (
                   <span className="nearby-dist">
                     {dist < 0.1 ? "next door" : `${dist.toFixed(1)} mi away`}

@@ -172,12 +172,16 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }:
       inner.rel = "noopener noreferrer";
     }
 
+    const img = document.createElement("span");
+    img.className = l.photo ? "pin-popup-photo" : "pin-popup-photo is-empty";
     if (l.photo) {
-      const img = document.createElement("span");
-      img.className = "pin-popup-photo";
       img.style.backgroundImage = `url(${l.photo})`;
-      inner.appendChild(img);
+    } else {
+      // Some listings genuinely carry no photos; say so rather than showing
+      // an empty grey box that reads as a loading failure.
+      img.textContent = "No photo available";
     }
+    inner.appendChild(img);
 
     const body = document.createElement("span");
     body.className = "pin-popup-body";

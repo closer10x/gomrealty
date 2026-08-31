@@ -904,3 +904,33 @@ a.pin-popup-inner:hover { color: inherit; transform: translateY(-2px); }
 }
 .list-more:hover:not(:disabled) { background: var(--surface-chip); }
 .list-more:disabled { opacity: 0.7; cursor: default; }
+
+/* Explicit empty state for listings that genuinely have no photo. */
+.result-thumb.is-empty,
+.active-photo:not([style*="background-image"]),
+.pin-popup-photo.is-empty {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.no-photo-mini {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--ink-dim); line-height: 1.2; padding: 0 4px;
+}
+.no-photo {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+.pin-popup-photo.is-empty {
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em; color: var(--ink-dim);
+}
+
+/* Photo lookup still in flight — a quiet shimmer, not a "no photo" claim. */
+.no-photo-pending {
+  width: 100%; height: 100%;
+  background: linear-gradient(100deg, transparent 20%, oklch(1 0 0 / 0.45) 50%, transparent 80%);
+  background-size: 220% 100%;
+  animation: photo-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes photo-shimmer {
+  from { background-position: 120% 0; }
+  to   { background-position: -60% 0; }
+}
