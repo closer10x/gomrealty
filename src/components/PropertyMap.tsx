@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { Listing } from "@/lib/realty";
 
 type Props = {
@@ -13,12 +13,20 @@ type Props = {
   onMoveEnd?: (centre: { lat: number; lng: number; radiusMiles: number }) => void;
 };
 
-const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-const STYLE = process.env.NEXT_PUBLIC_MAPBOX_STYLE || "mapbox://styles/mapbox/light-v11";
+/**
+ * CARTO's Positron basemap — free, no account or token, and already the muted
+ * grey-cream the comp is drawn in. Attribution is required and MapLibre renders
+ * it by default. Set NEXT_PUBLIC_MAP_STYLE to a MapTiler/self-hosted style URL
+ * to swap it without touching this file.
+ */
+const STYLE =
+  process.env.NEXT_PUBLIC_MAP_STYLE ||
+  "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+
 const HOUSTON: [number, number] = [-95.4, 29.79];
 
-/** Half the viewport diagonal, in miles — the radius that covers what's on screen. */
-function viewportRadiusMiles(map: mapboxgl.Map): number {
+/** Half the viewport diagonal, in miles — the radius covering what's on screen. */
+function viewportRadiusMiles(map: maplibregl.Map): number {
   const b = map.getBounds();
   if (!b) return 5;
   const ne = b.getNorthEast();
@@ -30,57 +38,72 @@ function viewportRadiusMiles(map: mapboxgl.Map): number {
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(sw.lat)) * Math.cos(toRad(ne.lat)) * Math.sin(dLng / 2) ** 2;
-  const diagonal = 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
-  return Math.min(Math.max(diagonal / 2, 0.5), 50);
+  return Math.min(Math.max((2 * R * Math.asin(Math.min(1, Math.sqrt(a)))) / 2, 1), 50);
 }
 
 export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }: Props) {
   const container = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<mapboxgl.Marker[]>([]);
+  const map = useRef<maplibregl.Map | null>(null);
+  const markers = useRef<maplibregl.Marker[]>([]);
+  const popup = useRef<maplibregl.Popup | null>(null);
 
-  // Keep the latest handlers without re-running the map-init effect.
   const onSelectRef = useRef(onSelect);
   const onMoveEndRef = useRef(onMoveEnd);
   onSelectRef.current = onSelect;
   onMoveEndRef.current = onMoveEnd;
 
   const userMoved = useRef(false);
+  const moveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!container.current || map.current || !TOKEN) return;
+    if (!container.current || map.current) return;
 
-    mapboxgl.accessToken = TOKEN;
-    const m = new mapboxgl.Map({
+    const m = new maplibregl.Map({
       container: container.current,
       style: STYLE,
       center: HOUSTON,
       zoom: 9.2,
-      attributionControl: true,
     });
     map.current = m;
 
-    m.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-left");
+    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-left");
 
-    // Only refetch on a move the user actually drove; fitBounds also fires moveend.
+    /**
+     * The container can mount at zero height (dynamic import + layout timing).
+     * A map sized 0 decides it needs no tiles and never reconsiders, so watch
+     * the box and tell the map whenever it actually changes size.
+     */
+    const ro = new ResizeObserver(() => m.resize());
+    ro.observe(container.current);
+    m.once("load", () => m.resize());
+
     m.on("dragstart", () => (userMoved.current = true));
     m.on("zoomstart", (e) => {
       if ((e as { originalEvent?: unknown }).originalEvent) userMoved.current = true;
     });
+
+    // Debounced: a search costs an API credit, so don't fire mid-pan.
     m.on("moveend", () => {
       if (!userMoved.current) return;
       userMoved.current = false;
-      const c = m.getCenter();
-      onMoveEndRef.current?.({ lat: c.lat, lng: c.lng, radiusMiles: viewportRadiusMiles(m) });
+      if (moveTimer.current) clearTimeout(moveTimer.current);
+      moveTimer.current = setTimeout(() => {
+        const c = m.getCenter();
+        onMoveEndRef.current?.({ lat: c.lat, lng: c.lng, radiusMiles: viewportRadiusMiles(m) });
+      }, 700);
     });
 
     return () => {
+      if (moveTimer.current) clearTimeout(moveTimer.current);
+      popup.current?.remove();
+      popup.current = null;
+      ro.disconnect();
       m.remove();
       map.current = null;
     };
   }, []);
 
-  // Rebuild markers whenever the listings or the selection change.
+  // Rebuild markers when listings or the selection change.
   useEffect(() => {
     const m = map.current;
     if (!m) return;
@@ -94,45 +117,122 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }:
 
     located.forEach(({ l, i }) => {
       const on = i === selected;
-
       const el = document.createElement("button");
       el.type = "button";
-      el.className = on ? "mapbox-pin is-active" : "mapbox-pin";
+      el.className = on ? "map-pin is-active" : "map-pin";
       el.setAttribute("aria-label", `${l.priceFull} — ${l.address}`);
       el.setAttribute("aria-pressed", String(on));
-      el.innerHTML = `<span class="pin-bubble"></span><span class="pin-tip"></span>`;
-      const bubble = el.querySelector(".pin-bubble") as HTMLElement;
+
+      const bubble = document.createElement("span");
+      bubble.className = "pin-bubble";
       bubble.textContent = l.priceShort;
+      const tip = document.createElement("span");
+      tip.className = "pin-tip";
+      el.append(bubble, tip);
+
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelectRef.current(i);
       });
 
       markers.current.push(
-        new mapboxgl.Marker({ element: el, anchor: "bottom" })
+        new maplibregl.Marker({ element: el, anchor: "bottom" })
           .setLngLat([l.lng as number, l.lat as number])
           .addTo(m),
       );
     });
 
-    // Frame the results, but don't yank the map while the user is reading one.
+    // Frame the results, but don't yank the map out from under the user.
     if (located.length > 1 && !userMoved.current) {
-      const b = new mapboxgl.LngLatBounds();
+      const b = new maplibregl.LngLatBounds();
       located.forEach(({ l }) => b.extend([l.lng as number, l.lat as number]));
-      m.fitBounds(b, { padding: 80, maxZoom: 13, duration: 600 });
-    } else if (located.length === 1) {
-      m.easeTo({ center: [located[0].l.lng as number, located[0].l.lat as number], zoom: 13 });
+      m.fitBounds(b, { padding: 90, maxZoom: 13, duration: 600 });
     }
   }, [listings, selected]);
 
-  // Ease to the active listing when it's picked from the list.
+  // A card above the selected pin, linking through to the listing.
   useEffect(() => {
     const m = map.current;
-    const l = listings[selected];
-    if (!m || !l || l.lat === null || l.lng === null) return;
-    m.easeTo({ center: [l.lng, l.lat], duration: 500 });
-  }, [selected, listings]);
+    if (!m) return;
 
-  if (!TOKEN) return null;
-  return <div ref={container} className="mapbox-canvas" />;
+    popup.current?.remove();
+    popup.current = null;
+
+    const l = listings[selected];
+    if (!l || l.lat === null || l.lng === null) return;
+
+    const el = document.createElement("div");
+    el.className = "pin-popup";
+
+    const inner = l.href ? document.createElement("a") : document.createElement("div");
+    inner.className = "pin-popup-inner";
+    if (l.href && inner instanceof HTMLAnchorElement) {
+      inner.href = l.href;
+      inner.target = "_blank";
+      inner.rel = "noopener noreferrer";
+    }
+
+    if (l.photo) {
+      const img = document.createElement("span");
+      img.className = "pin-popup-photo";
+      img.style.backgroundImage = `url(${l.photo})`;
+      inner.appendChild(img);
+    }
+
+    const body = document.createElement("span");
+    body.className = "pin-popup-body";
+
+    const addr = document.createElement("span");
+    addr.className = "pin-popup-addr";
+    addr.textContent = l.address;
+
+    const specs = document.createElement("span");
+    specs.className = "pin-popup-specs";
+    specs.textContent = l.specs;
+
+    body.append(addr, specs);
+
+    if (l.href) {
+      const cta = document.createElement("span");
+      cta.className = "pin-popup-cta";
+      cta.textContent = "View listing \u2192";
+      body.appendChild(cta);
+    }
+
+    inner.appendChild(body);
+    el.appendChild(inner);
+
+    popup.current = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      /**
+       * No fixed anchor: MapLibre then picks the side with room and flips the
+       * card when the pin is near an edge. Offsets keep it clear of the price
+       * bubble (~46px tall with its tip) whichever side it lands on.
+       */
+      offset: {
+        bottom: [0, -52],
+        "bottom-left": [0, -52],
+        "bottom-right": [0, -52],
+        top: [0, 14],
+        "top-left": [0, 14],
+        "top-right": [0, 14],
+        left: [16, -18],
+        right: [-16, -18],
+        center: [0, -52],
+      },
+      maxWidth: "260px",
+      className: "listing-popup",
+    })
+      .setLngLat([l.lng, l.lat])
+      .setDOMContent(el)
+      .addTo(m);
+
+    return () => {
+      popup.current?.remove();
+      popup.current = null;
+    };
+  }, [listings, selected]);
+
+  return <div ref={container} className="map-canvas" />;
 }

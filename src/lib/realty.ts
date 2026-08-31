@@ -178,11 +178,54 @@ export async function realtyCredits(): Promise<{ limit: number | null; remaining
 }
 
 /* ------------------------------------------------------------------ */
+/* Credit-saving cache canonicalisation                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * RealtyAPI bills one credit per call regardless of result count, and Next's
+ * Data Cache keys on the request URL. So the cheapest thing we can do is make
+ * near-identical visitor searches produce a byte-identical upstream URL.
+ *
+ * Verified: upstream matches locations case-insensitively, so folding case is
+ * safe and turns "Katy, TX" / "katy, tx" / " Katy,  TX " into one cache entry.
+ */
+
+/** Seconds to cache a visitor search. Listings don't move hour to hour. */
+export const SEARCH_TTL = 21_600; // 6h
+
+/**
+ * Always ask upstream for this many results and slice locally, so a request
+ * for 7 and a request for 12 share one credit instead of costing two.
+ */
+export const SEARCH_FETCH_COUNT = 24;
+
+/** ~1.4 miles. Small pans land on the same grid point and reuse the cache. */
+export const COORD_GRID = 0.02;
+
+const snap = (n: number, grid: number) => Math.round(n / grid) * grid;
+
+export function canonicalLocation(raw: string): string {
+  return raw.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/** Snap a viewport to the grid so panning doesn't bill per pixel. */
+export function canonicalCoords(lat: number, lng: number, radiusMiles: number) {
+  return {
+    latitude: Number(snap(lat, COORD_GRID).toFixed(4)),
+    longitude: Number(snap(lng, COORD_GRID).toFixed(4)),
+    // Whole miles, so a nudge of the zoom doesn't mint a new cache key.
+    radius: Math.min(Math.max(Math.round(radiusMiles), 1), 50),
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Normalisation                                                       */
 /* ------------------------------------------------------------------ */
 
 export type Listing = {
   id: string;
+  /** Which upstream this came from. */
+  provider?: "realtor" | "redfin";
   price: number | null;
   priceShort: string;
   priceFull: string;
@@ -256,6 +299,18 @@ export function formatPriceFull(price: number | null): string {
   return price === null ? "Price on request" : `$${price.toLocaleString("en-US")}`;
 }
 
+/**
+ * rdcpix serves one photo at several sizes, chosen by a suffix before `.jpg`:
+ * `s` is 120x80, `t` 140x105, `m`/`l` ~300px, `x` ~460px, `od` the original
+ * (~1024px). Realtor.com listings hand us `od` already, but new-home records on
+ * nh.rdcpix.com arrive as `s`, which is far too small for a card and renders
+ * visibly blurry. Ask for the original on any rdcpix URL.
+ */
+export function fullSizePhoto(url: string | null): string | null {
+  if (!url || !/^https?:\/\/[^/]*\brdcpix\.com\//.test(url)) return url;
+  return url.replace(/(-[a-z]\d+)(?:od|[a-z])?\.jpg$/i, "$1od.jpg");
+}
+
 export function normalizeListing(raw: Record<string, unknown>): Listing {
   const desc = isRecord(raw.description) ? raw.description : {};
   const loc = isRecord(raw.location) ? raw.location : {};
@@ -316,7 +371,7 @@ export function normalizeListing(raw: Record<string, unknown>): Listing {
     address,
     city,
     status: status || "Active",
-    photo: photoUrl(raw.primary_photo) ?? photoUrl(photos[0]),
+    photo: fullSizePhoto(photoUrl(raw.primary_photo) ?? photoUrl(photos[0])),
     lat: asNum(pick(coord, "lat", "latitude")) ?? asNum(pick(addr, "latitude")),
     lng: asNum(pick(coord, "lon", "lng", "longitude")) ?? asNum(pick(addr, "longitude")),
     href:
@@ -326,5 +381,111 @@ export function normalizeListing(raw: Record<string, unknown>): Listing {
 }
 
 export function normalizeListings(payload: unknown, limit = 24): Listing[] {
-  return extractResults(payload).slice(0, limit).map(normalizeListing);
+  return extractResults(payload)
+    .slice(0, limit)
+    .map((r) => ({ ...normalizeListing(r), provider: "realtor" as const }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Redfin                                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Redfin nests everything under searchResults[].homeData with its own field
+ * names, so it needs a separate normalizer rather than the probing one above.
+ */
+export function normalizeRedfinListing(home: Record<string, unknown>): Listing {
+  const addr = isRecord(home.addressInfo) ? home.addressInfo : {};
+  const centroidOuter = isRecord(addr.centroid) ? addr.centroid : {};
+  const centroid = isRecord(centroidOuter.centroid) ? centroidOuter.centroid : {};
+  const priceInfo = isRecord(home.priceInfo) ? home.priceInfo : {};
+  const sqftInfo = isRecord(home.sqftInfo) ? home.sqftInfo : {};
+
+  const price = asNum(pick(priceInfo, "amount"));
+  const beds = asNum(pick(home, "beds"));
+  const baths = asNum(pick(home, "baths"));
+  const sqft = asNum(pick(sqftInfo, "amount"));
+
+  const line = String(pick(addr, "formattedStreetLine") ?? "").trim();
+  const city = (pick(addr, "city") as string | undefined) ?? null;
+  const state = String(pick(addr, "state") ?? "");
+  const address = [line, city, state].filter(Boolean).join(", ") || "Address withheld";
+
+  const specs = [
+    beds !== null ? `${beds} bd` : null,
+    baths !== null ? `${baths} ba` : null,
+    sqft !== null ? `${sqft.toLocaleString("en-US")} sqft` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const url = pick(home, "url");
+
+  return {
+    id: `rf-${String(pick(home, "propertyId", "listingId") ?? line)}`,
+    provider: "redfin",
+    price,
+    priceShort: formatPriceShort(price),
+    priceFull: formatPriceFull(price),
+    beds,
+    baths,
+    sqft,
+    specs: specs || "Details on request",
+    address,
+    city,
+    status: "For Sale",
+    // photosInfo exposes only group codes, not URLs. The Redfin CDN path is
+    // undocumented, so guessing one would just yield broken images.
+    photo: null,
+    lat: asNum(pick(centroid, "latitude")),
+    lng: asNum(pick(centroid, "longitude")),
+    href: typeof url === "string" && url ? `https://www.redfin.com${url}` : null,
+  };
+}
+
+export function normalizeRedfinListings(payload: unknown, limit = 24): Listing[] {
+  const rows = isRecord(payload) && Array.isArray(payload.searchResults) ? payload.searchResults : [];
+  return rows
+    .filter(isRecord)
+    .map((r) => (isRecord(r.homeData) ? r.homeData : null))
+    .filter((h): h is Record<string, unknown> => h !== null)
+    .slice(0, limit)
+    .map(normalizeRedfinListing);
+}
+
+/** Street + city, lowercased — stable enough to spot the same home twice. */
+function addressKey(l: Listing): string {
+  return l.address
+    .toLowerCase()
+    .replace(/[.,#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Merge provider results round-robin, preferring the earlier list on a
+ * collision. Realtor is passed first because it carries photos and Redfin
+ * does not, so a duplicate address keeps the entry with an image.
+ *
+ * Interleaved rather than concatenated: appending then slicing to `limit`
+ * lets the first provider fill the whole quota and starves the second
+ * entirely.
+ */
+export function mergeListings(lists: Listing[][], limit: number): Listing[] {
+  const seen = new Set<string>();
+  const out: Listing[] = [];
+  const longest = Math.max(0, ...lists.map((l) => l.length));
+
+  for (let i = 0; i < longest && out.length < limit; i++) {
+    for (const list of lists) {
+      if (out.length >= limit) break;
+      const l = list[i];
+      if (!l) continue;
+      const k = addressKey(l);
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push(l);
+    }
+  }
+  return out;
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import MapHero from "@/components/MapHero";
-import { REVIEWS, STATS } from "@/lib/content";
+import { REVIEWS, SOFI_LAKES, STATS } from "@/lib/content";
 import { getMarkets } from "@/lib/markets";
 import { SAMPLE_LISTINGS } from "@/lib/sampleListings";
 import { normalizeListings, realtyConfigured, realtyFetch } from "@/lib/realty";
@@ -77,6 +77,49 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <section className="section community">
+        <div className="community-copy">
+          <div className="eyebrow">FEATURED COMMUNITY</div>
+          <h2 className="display h3">{SOFI_LAKES.name}</h2>
+          <div className="community-place">{SOFI_LAKES.place}</div>
+          <p>
+            Five builders on 390 homesites in west Katy, with 150 acres of green space and more
+            than five miles of trail. {SOFI_LAKES.amenities}
+          </p>
+          <p>
+            Worth knowing before you tour: it sits in Waller County on Royal ISD, not Katy ISD,
+            and an 11.8-acre school site is reserved inside the community. Only 24 of the 390
+            homes touch the water, and the HOA runs $1,350 a year.
+          </p>
+          <div className="community-builders">
+            {SOFI_LAKES.builders.map((b) => (
+              <span className="community-builder" key={b}>
+                {b}
+              </span>
+            ))}
+          </div>
+          <a className="arrow-link" href={SOFI_LAKES.href} target="_blank" rel="noopener noreferrer">
+            Visit sofilakes.com &rarr;
+          </a>
+        </div>
+        <div className="community-media">
+          <div className="community-photos">
+            {SOFI_LAKES.photos.map((ph) => (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img className="community-photo" key={ph.src} src={ph.src} alt={ph.alt} loading="lazy" />
+            ))}
+          </div>
+          <div className="community-facts">
+            {SOFI_LAKES.facts.map((f) => (
+              <div className="community-fact" key={f.label}>
+                <div className="display community-fact-value">{f.value}</div>
+                <div className="community-fact-label">{f.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="split">
         <div className="split-l">
           <div className="eyebrow">BUYING</div>
@@ -122,7 +165,7 @@ export default async function HomePage() {
           Fifteen minutes on the phone is usually enough to tell you where you stand. No script, no
           pressure.
         </p>
-        <Link href="/contact" className="btn-cta">
+        <Link href="/book" className="btn-cta">
           Schedule a call
         </Link>
       </section>

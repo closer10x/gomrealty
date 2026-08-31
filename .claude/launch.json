@@ -4,8 +4,12 @@
     {
       "name": "gomrealty",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3200
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3200,
+      "autoPort": true
     }
   ]
 }

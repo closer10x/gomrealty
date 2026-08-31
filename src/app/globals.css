@@ -171,10 +171,32 @@ button { font: inherit; color: inherit; background: none; border: none; padding:
 }
 .pin-tip { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; }
 
-.hero-panel { position: absolute; left: var(--gutter); top: 40px; width: 452px; z-index: 40; }
+.hero-panel {
+  position: absolute; left: var(--gutter); top: 40px; width: 452px; z-index: 40;
+  /* Result-list height, swapped when the intro card retires.
+     Open height fills the space the intro card freed, bounded by both the
+     hero box and the viewport, so it tracks the screen instead of a fixed px:
+       hero room     = hero height (88vh, floor 820px) - 40px top - 40px bottom
+       viewport room = 100vh - 107px (header + panel top) - 40px bottom
+     less 176px of fixed card chrome (search row + filters + actions). */
+  --list-h: 196px;
+  --list-h-open: max(240px, min(calc(max(88vh, 820px) - 256px), calc(100vh - 323px)));
+}
+.hero-panel.is-expanded { --list-h: var(--list-h-open); }
 .hero-card {
   background: var(--surface); border: 1px solid var(--line-soft); border-radius: 18px;
   padding: 22px 24px 20px; margin-bottom: 16px; box-shadow: var(--shadow-md);
+  overflow: hidden; max-height: 60rem;
+  transition:
+    opacity 300ms ease, transform 300ms ease,
+    max-height 420ms ease 120ms, margin-bottom 420ms ease 120ms,
+    padding 420ms ease 120ms, border-width 420ms ease 120ms,
+    visibility 0s linear 540ms;
+}
+/* Retires 3s after load so the map and the listings get the space. */
+.hero-card.is-hidden {
+  opacity: 0; transform: translateY(-8px); visibility: hidden; pointer-events: none;
+  max-height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; border-width: 0;
 }
 .hero-title { font-size: 58px; line-height: 1; letter-spacing: -0.035em; color: var(--ink-strong); margin: 0 0 16px; }
 .hero-title em { font-style: normal; color: oklch(0.44 0.13 154); }
@@ -195,7 +217,7 @@ button { font: inherit; color: inherit; background: none; border: none; padding:
 }
 .chip[aria-pressed="true"] { border-color: var(--brand); background: var(--brand); color: var(--on-brand); }
 
-.result-list { max-height: 196px; overflow-y: auto; padding: 4px 10px 10px; }
+.result-list { max-height: var(--list-h); overflow-y: auto; padding: 4px 10px 10px; transition: max-height 420ms ease 120ms; }
 .result {
   display: flex; gap: 13px; padding: 10px; border-radius: 12px; width: 100%;
   text-align: left; background: transparent; transition: background 120ms ease;
@@ -244,6 +266,40 @@ button { font: inherit; color: inherit; background: none; border: none; padding:
   position: absolute; right: var(--gutter); bottom: 34px; width: 306px; background: var(--surface);
   border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; z-index: 40;
 }
+
+/* Vertical rail of nearby listings down the right edge of the hero. */
+.nearby-rail {
+  position: absolute; right: var(--gutter); top: 40px; bottom: 34px; width: 306px;
+  z-index: 40; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 12px;
+  padding-right: 4px; scrollbar-width: thin;
+  scroll-snap-type: y proximity;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+.nearby-card {
+  flex: none; background: var(--surface); border-radius: 16px; overflow: hidden;
+  box-shadow: var(--shadow-lg); scroll-snap-align: start;
+  border: 2px solid transparent; transition: border-color 140ms ease, transform 140ms ease;
+}
+.nearby-card:hover { transform: translateY(-2px); }
+.nearby-card.is-active { border-color: var(--brand-mid); }
+.nearby-hit {
+  display: block; width: 100%; text-align: left; padding: 0;
+  background: none; border: none; color: inherit; cursor: pointer;
+}
+.nearby-card .active-photo { position: relative; }
+.nearby-dist {
+  position: absolute; top: 10px; right: 10px;
+  padding: 4px 10px; border-radius: 14px; background: oklch(1 0 0 / 0.92);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; color: var(--ink-nav);
+  backdrop-filter: blur(4px);
+}
+.nearby-open {
+  display: block; padding: 11px 18px 14px; font-size: 12.5px; font-weight: 600;
+  color: var(--brand-bright); border-top: 1px solid var(--line-softer);
+}
+.nearby-open:hover { background: var(--surface-hover); color: var(--brand); }
 .active-photo {
   height: 138px; background: var(--hatch-dark); background-size: cover; background-position: center;
   display: flex; align-items: flex-end; padding: 12px;
@@ -292,6 +348,100 @@ button { font: inherit; color: inherit; background: none; border: none; padding:
 }
 .area-name { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 3px; }
 .area-note { font-size: 12.5px; color: var(--ink-faint); }
+
+/* ------------------------------------------------------------------ *
+ * Booking calendar (/book)
+ * ------------------------------------------------------------------ */
+
+.booking-hours-note { margin-top: 14px; font-size: 15.5px; color: var(--ink-muted); }
+.booking-section { border-bottom: none; }
+.booking { display: grid; grid-template-columns: 360px 1fr; gap: 48px; align-items: start; }
+
+.booking-cal { background: var(--surface-soft); border-radius: 18px; padding: 20px; }
+.booking-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.booking-month { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.booking-nav {
+  width: 32px; height: 32px; border-radius: 50%; font-size: 18px; line-height: 1;
+  border: 1px solid var(--line-chip); background: var(--surface); color: var(--ink-nav);
+  transition: background 120ms ease, color 120ms ease;
+}
+.booking-nav:hover:not(:disabled) { background: var(--brand); color: var(--on-brand); border-color: var(--brand); }
+.booking-nav:disabled { opacity: 0.35; cursor: default; }
+
+.booking-weekdays, .booking-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.booking-weekdays { margin-bottom: 6px; }
+.booking-weekdays span { text-align: center; font-size: 11px; font-weight: 600; color: var(--ink-faint); }
+
+.booking-cell {
+  position: relative; aspect-ratio: 1; border-radius: 10px; font-size: 13.5px;
+  background: var(--surface); color: var(--ink); border: 1px solid transparent;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.booking-cell.empty { background: transparent; }
+.booking-cell:disabled { background: transparent; color: var(--ink-slot); cursor: default; }
+.booking-cell:hover:not(:disabled) { border-color: var(--brand); }
+.booking-cell[aria-current="date"] { background: var(--brand); color: var(--on-brand); border-color: var(--brand); }
+.booking-dot {
+  position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--brand-bright);
+}
+.booking-cell[aria-current="date"] .booking-dot { background: var(--on-brand); }
+.booking-degraded { font-size: 12.5px; line-height: 1.5; color: oklch(0.5 0.19 25); margin: 14px 0 0; }
+
+.booking-panel { min-width: 0; }
+.booking-empty { max-width: 42ch; }
+.booking-empty p { font-size: 16px; line-height: 1.6; color: var(--ink-muted); margin: 0; }
+.booking-when { margin-bottom: 18px; }
+.booking-day { font-size: 26px; letter-spacing: -0.025em; margin: 0 0 4px; }
+.booking-tz { font-size: 13px; color: var(--ink-faint); margin: 0; }
+.booking-note { font-size: 15px; color: var(--ink-muted); margin: 0; }
+
+.booking-slots {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px; margin-bottom: 8px;
+}
+.booking-slot {
+  padding: 10px 8px; border-radius: 10px; font-size: 13.5px; font-weight: 500;
+  border: 1px solid var(--line-chip); background: var(--surface); color: var(--ink-nav);
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.booking-slot:hover:not(:disabled) { border-color: var(--brand); color: var(--ink-strong); }
+.booking-slot[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); border-color: var(--brand); }
+.booking-slot:disabled { opacity: 0.4; text-decoration: line-through; cursor: default; }
+
+.booking-form { margin-top: 26px; max-width: 450px; }
+
+.booking-done { max-width: 46ch; }
+.booking-check {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--brand);
+  margin-bottom: 20px; position: relative;
+}
+.booking-check::after {
+  content: ""; position: absolute; left: 14px; top: 11px; width: 11px; height: 19px;
+  border: solid var(--on-brand); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg);
+}
+.booking-done-when { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin: 12px 0 10px; }
+.booking-done-sub { font-size: 15px; line-height: 1.6; color: var(--ink-muted); margin: 0 0 10px; }
+
+/* Featured community (SoFi Lakes): copy on the left, the numbers on the right. */
+.community { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: start; }
+.community-copy p { font-size: 16px; line-height: 1.65; color: var(--ink-muted); margin: 0 0 16px; max-width: 52ch; }
+.community-place { font-size: 13px; color: var(--ink-faint); margin: -8px 0 20px; }
+.community-builders { display: flex; flex-wrap: wrap; gap: 7px; margin: 22px 0 26px; }
+.community-builder {
+  padding: 6px 13px; border-radius: 20px; border: 1px solid var(--line-chip);
+  font-size: 12.5px; font-weight: 500; color: var(--ink-nav);
+}
+.community-media { display: grid; gap: 18px; }
+.community-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.community-photo {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 16px; display: block; background: var(--hatch);
+}
+.community-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.community-fact { padding: 26px 24px; border-radius: 18px; background: var(--surface-soft); }
+.community-fact-value { font-size: 34px; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 8px; }
+.community-fact-label { font-size: 12.5px; line-height: 1.45; color: var(--ink-faint); }
 
 .split { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
 .split-l { padding: 80px 52px 80px var(--gutter); border-right: 1px solid var(--line); }
@@ -436,7 +586,8 @@ textarea.field { resize: vertical; }
   .zoom { display: none; }
   .data-note { position: static; display: inline-block; margin: 14px var(--gutter) 0; }
   .active-card { position: relative; right: 0; bottom: 0; width: auto; margin: 16px var(--gutter) 0; }
-  .result-list { max-height: 260px; }
+  /* Hero is height:auto here and the panel is in flow, so track the viewport only. */
+  .hero-panel { --list-h: 260px; --list-h-open: max(360px, calc(100vh - 380px)); }
 
   .stats { grid-template-columns: repeat(2, 1fr); }
   .stat { padding: 26px 20px; }
@@ -445,6 +596,11 @@ textarea.field { resize: vertical; }
   .stat-value { font-size: 32px; }
 
   .section { padding: 60px var(--gutter); }
+  .community { grid-template-columns: 1fr; gap: 34px; }
+  .booking { grid-template-columns: 1fr; gap: 30px; }
+  .booking-cal { max-width: 360px; }
+  .community-fact { padding: 20px 18px; }
+  .community-fact-value { font-size: 27px; }
   .section-plain { padding: 68px var(--gutter); }
   .section-head { margin-bottom: 30px; gap: 16px; }
   .h2, .cta-title { font-size: 32px; }
@@ -483,41 +639,100 @@ textarea.field { resize: vertical; }
 }
 
 /* ------------------------------------------------------------------ *
- * Live Mapbox map. Applies only when NEXT_PUBLIC_MAPBOX_TOKEN is set;
- * without it the hero keeps the comp's decorative map above.
+ * Live map (MapLibre + CARTO Positron). The map fills the hero and the
+ * listings panel floats over it, collapsible via the edge grip.
  * ------------------------------------------------------------------ */
 
-.mapbox-canvas { position: absolute; inset: 0; }
+.hero { position: relative; height: 88vh; min-height: 820px; background: var(--surface-map); overflow: hidden; }
+.hero-map { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+/* MapLibre stamps .maplibregl-map on this node and sets position:relative,
+   which defeats inset:0 — so size it explicitly instead. */
+.map-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map-loading { background: var(--surface-map); }
 
-/* Marker elements are created imperatively, so they can't use inline vars. */
-.mapbox-pin {
+/* Markers are built imperatively, so they carry their own colours. */
+.map-pin {
   display: flex; flex-direction: column; align-items: center;
   cursor: pointer; padding: 0; background: none; border: none;
   transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.mapbox-pin .pin-bubble {
+.map-pin .pin-bubble {
   padding: 7px 14px; border-radius: 22px; font-size: 14px; font-weight: 600;
   letter-spacing: -0.02em; white-space: nowrap;
   background: var(--surface); color: var(--brand);
   box-shadow: 0 3px 12px oklch(0.4 0.02 155 / 0.16);
 }
-.mapbox-pin .pin-tip {
+.map-pin .pin-tip {
   width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent;
   border-top: 8px solid var(--surface);
 }
-.mapbox-pin:hover { transform: scale(1.06); z-index: 40; }
-.mapbox-pin.is-active { z-index: 50; transform: scale(1.14); }
-.mapbox-pin.is-active .pin-bubble { background: var(--brand-mid); color: var(--on-brand-hi); }
-.mapbox-pin.is-active .pin-tip { border-top-color: var(--brand-mid); }
+.map-pin:hover { transform: scale(1.06); z-index: 40; }
+.map-pin.is-active { z-index: 50; transform: scale(1.14); }
+.map-pin.is-active .pin-bubble { background: var(--brand-mid); color: var(--on-brand-hi); }
+.map-pin.is-active .pin-tip { border-top-color: var(--brand-mid); }
 
-/* The live map owns the full hero; the panel floats over it. */
-.hero-live .hero-map { left: 0; right: 0; top: 0; bottom: 0; }
-.hero-live .hero-panel { z-index: 40; }
-.hero-live .mapboxgl-ctrl-bottom-left { left: 500px; bottom: 26px; }
-.hero-live .mapboxgl-ctrl-group { border-radius: 12px; box-shadow: var(--shadow-sm); overflow: hidden; }
-.hero-live .mapboxgl-ctrl-group button { width: 42px; height: 42px; }
-.hero-live .mapboxgl-ctrl-bottom-right { margin-bottom: 2px; }
-.hero-live .mapboxgl-ctrl-attrib { font-size: 10px; background: oklch(1 0 0 / 0.75); }
+/* Panel floats over the map and slides away when collapsed. */
+.hero-panel {
+  position: absolute; left: var(--gutter); top: 40px; width: 452px; z-index: 40;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hero.panel-closed .hero-panel {
+  transform: translateX(calc(-100% - var(--gutter)));
+}
+.hero.panel-closed .hero-card,
+.hero.panel-closed .search-card {
+  opacity: 0; pointer-events: none;
+}
+.hero-card, .search-card { transition: opacity 200ms ease; }
+
+/* The headline card retires after a few seconds and lets the search card rise. */
+.hero-card.is-gone {
+  opacity: 0; max-height: 0; margin-bottom: 0;
+  padding-top: 0; padding-bottom: 0; border-width: 0;
+  overflow: hidden; pointer-events: none;
+  transition: opacity 260ms ease, max-height 420ms cubic-bezier(0.4, 0, 0.2, 1),
+              margin-bottom 420ms cubic-bezier(0.4, 0, 0.2, 1),
+              padding 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hero-card {
+  /* flex: none — in the panel's flex column this card must never shrink below
+     its content, or the headline spills outside its own box. The result list
+     absorbs the slack instead (it has min-height and flex: 1). */
+  flex: none;
+  max-height: 520px;
+  transition: opacity 200ms ease, max-height 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Positioning context for the grip. */
+.search-shell { position: relative; }
+
+/* The thumb grip — centre-right edge of the panel, travels with it. */
+.panel-grip {
+  position: absolute; top: 50%; right: -26px; transform: translateY(-50%);
+  width: 26px; height: 62px; z-index: 2;
+  display: grid; place-items: center;
+  background: var(--surface); color: var(--ink-nav);
+  border: 1px solid var(--line-soft); border-left: none;
+  border-radius: 0 12px 12px 0;
+  box-shadow: 3px 0 12px oklch(0.4 0.02 155 / 0.12);
+  transition: background 120ms ease;
+}
+.panel-grip:hover { background: var(--surface-hover); }
+.panel-grip-lines {
+  width: 4px; height: 22px; border-radius: 2px;
+  background:
+    linear-gradient(var(--ink-dim) 0 0) 0 0 / 1.5px 100% no-repeat,
+    linear-gradient(var(--ink-dim) 0 0) 100% 0 / 1.5px 100% no-repeat;
+}
+.hero.panel-closed .panel-grip { border-radius: 0 12px 12px 0; }
+
+/* MapLibre chrome, nudged clear of the floating panel. */
+.maplibregl-ctrl-bottom-left { left: 500px; bottom: 26px; transition: left 300ms cubic-bezier(0.4, 0, 0.2, 1); }
+.hero.panel-closed .maplibregl-ctrl-bottom-left { left: 12px; }
+.maplibregl-ctrl-group { border-radius: 12px !important; box-shadow: var(--shadow-sm) !important; overflow: hidden; border: none !important; }
+.maplibregl-ctrl-group button { width: 42px !important; height: 42px !important; }
+.maplibregl-ctrl-attrib { font-size: 10px; background: oklch(1 0 0 / 0.8) !important; }
+.maplibregl-ctrl-attrib a { color: var(--ink-dim); }
 
 .active-photo-link { display: block; color: inherit; }
 .active-photo-link:hover { color: inherit; }
@@ -527,7 +742,10 @@ textarea.field { resize: vertical; }
 .view-toggle { display: none; }
 
 @media (max-width: 900px) {
-  .hero-live { display: flex; flex-direction: column; }
+  /* No room to float a panel over the map; stack and switch instead. */
+  .hero { height: auto; min-height: 0; display: flex; flex-direction: column; padding-bottom: 28px; }
+
+  .panel-grip { display: none; }
 
   .view-toggle {
     display: flex; gap: 4px; margin: 14px var(--gutter) 0; padding: 4px;
@@ -540,15 +758,121 @@ textarea.field { resize: vertical; }
   }
   .view-toggle button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
 
-  /* One pane at a time on small screens. */
-  .hero-live.view-map .hero-panel .search-card { display: none; }
-  .hero-live.view-map .hero-map { height: 460px; }
-  .hero-live.view-list .hero-map,
-  .hero-live.view-list .active-card,
-  .hero-live.view-list .hero-badges { display: none; }
-  .hero-live.view-list .hero-panel { margin-top: 0; }
-  .hero-live.view-list .result-list { max-height: none; }
+  .hero-map { position: relative; left: 0; right: 0; height: 420px; }
+  .hero-panel {
+    position: relative; left: 0; top: 0; width: auto;
+    margin: 16px var(--gutter) 0; transform: none !important;
+  }
+  .hero-badges { position: static; margin: 16px var(--gutter) 0; flex-wrap: wrap; }
+  .data-note { position: static; display: inline-block; margin: 14px var(--gutter) 0; }
+  .active-card { position: relative; right: 0; bottom: 0; width: auto; margin: 16px var(--gutter) 0; }
 
-  .hero-live .hero-map { position: relative; }
-  .hero-live .mapboxgl-ctrl-bottom-left { left: 0; bottom: 0; }
+  .hero.view-map .hero-panel .search-card { display: none; }
+  .hero.view-map .hero-card { display: none; }
+  .hero.view-list .hero-map,
+  .hero.view-list .active-card,
+  .hero.view-list .hero-badges { display: none; }
+  .hero.view-list .result-list { max-height: none; }
+
+  .maplibregl-ctrl-bottom-left { left: 0; bottom: 0; }
 }
+
+@media (max-width: 900px) {
+  .nearby-rail {
+    position: static; width: auto; margin: 16px 0 0; padding: 0 var(--gutter) 4px;
+    flex-direction: row; gap: 12px;
+    overflow-x: auto; overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    -webkit-mask-image: none; mask-image: none;
+  }
+  .nearby-card { width: 264px; scroll-snap-align: center; }
+  .hero.view-list .nearby-rail { display: none; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Desktop: the panel is a flex column and the result list absorbs the
+ * slack, so when the intro card retires the listings grow into the
+ * space it frees rather than the panel just getting shorter.
+ * ------------------------------------------------------------------ */
+@media (min-width: 901px) {
+  .hero-panel { display: flex; flex-direction: column; max-height: calc(100% - 88px); }
+  .hero-panel-inner { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  .search-shell { display: flex; min-height: 0; flex: 1 1 auto; }
+  .search-card { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; width: 100%; }
+  .result-list {
+    flex: 1 1 auto; max-height: none; min-height: 140px;
+    transition: none; /* height is driven by flex, not an animated max-height */
+  }
+  /* Keep the header/filters/actions at their natural size. */
+  .search-row, .filter-row, .search-actions { flex: none; }
+}
+
+/* Google Places suggestions under the search box. */
+.search-row { position: relative; }
+.suggestions {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+  margin: 0; padding: 6px; list-style: none; z-index: 60;
+  background: var(--surface); border: 1px solid var(--line-soft);
+  border-radius: 14px; box-shadow: var(--shadow-lg);
+  max-height: 260px; overflow-y: auto;
+}
+.suggestion {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 12px; border-radius: 9px; text-align: left;
+  font-size: 14px; color: var(--ink); background: none;
+}
+.suggestion:hover, .suggestion.is-active { background: var(--surface-hover); }
+.suggestion-icon { color: var(--brand-bright); font-size: 13px; flex: none; }
+
+/* Card above the selected pin. */
+.listing-popup .maplibregl-popup-content {
+  padding: 0; background: none; box-shadow: none; border-radius: 0;
+}
+.listing-popup .maplibregl-popup-tip { display: none; }
+.pin-popup { width: 244px; }
+.pin-popup-inner {
+  display: block; background: var(--surface); border-radius: 14px; overflow: hidden;
+  box-shadow: var(--shadow-lg); color: inherit; text-decoration: none;
+  border: 1px solid var(--line-soft);
+  transition: transform 140ms ease;
+}
+a.pin-popup-inner:hover { color: inherit; transform: translateY(-2px); }
+.pin-popup-photo {
+  display: block; height: 104px; background: var(--hatch-dark);
+  background-size: cover; background-position: center;
+}
+.pin-popup-body { display: block; padding: 10px 13px 12px; }
+.pin-popup-addr {
+  display: block; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em;
+  color: var(--ink-strong); margin-bottom: 2px;
+}
+.pin-popup-specs { display: block; font-size: 12px; color: var(--ink-dim); }
+.pin-popup-cta {
+  display: block; margin-top: 8px; font-size: 12px; font-weight: 600;
+  color: var(--brand-bright);
+}
+
+/* Endless-scroll footer in the nearby rail. */
+.rail-more, .rail-end {
+  flex: none; text-align: center; padding: 14px 16px; border-radius: 14px;
+  font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em;
+}
+.rail-more {
+  background: oklch(1 0 0 / 0.94); color: var(--brand-bright);
+  box-shadow: var(--shadow-sm); backdrop-filter: blur(4px);
+}
+.rail-more:hover { background: var(--surface); }
+.rail-end { color: var(--ink-dim); background: oklch(1 0 0 / 0.7); font-weight: 500; }
+
+@media (max-width: 900px) {
+  .rail-more, .rail-end { align-self: center; white-space: nowrap; }
+}
+
+/* Endless-scroll footer in the left result list. */
+.list-more {
+  display: block; width: 100%; margin: 6px 0 2px; padding: 12px;
+  border-radius: 12px; font-size: 12.5px; font-weight: 600;
+  color: var(--brand-bright); background: var(--surface-soft);
+}
+.list-more:hover:not(:disabled) { background: var(--surface-chip); }
+.list-more:disabled { opacity: 0.7; cursor: default; }

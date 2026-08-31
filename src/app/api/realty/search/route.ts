@@ -6,7 +6,17 @@
  * renders correctly before the key is provisioned.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { RealtyApiError, normalizeListings, realtyConfigured, realtyFetch } from "@/lib/realty";
+import {
+  RealtyApiError,
+  SEARCH_FETCH_COUNT,
+  canonicalLocation,
+  mergeListings,
+  normalizeListings,
+  normalizeRedfinListings,
+  realtyConfigured,
+  realtyFetch,
+  redfinFetch,
+} from "@/lib/realty";
 import { SAMPLE_LISTINGS } from "@/lib/sampleListings";
 
 export const runtime = "nodejs";
@@ -25,7 +35,8 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const location = sp.get("location")?.trim() || process.env.NEXT_PUBLIC_DEFAULT_LOCATION || "Houston, TX";
   const zip = sp.get("zipCode")?.trim();
-  const limit = Math.min(Math.max(Number(sp.get("limit") ?? 7) || 7, 1), 50);
+  const limit = Math.min(Math.max(Number(sp.get("limit") ?? 7) || 7, 1), 200);
+  const page = Math.min(Math.max(Number(sp.get("page")) || 1, 1), 40);
 
   // Map panning searches by viewport centre + radius rather than by name.
   // Check the params are actually present: Number(null) is 0, which is finite,
@@ -43,14 +54,27 @@ export async function GET(req: NextRequest) {
       source: "sample",
       note: "REALTYAPI_KEY is not set — showing sample inventory.",
       listings: SAMPLE_LISTINGS.slice(0, limit),
+      page: 1,
+      nextPage: false,
     });
   }
 
   const sortOrder = sp.get("sortOrder");
   const searchType = sp.get("searchType");
 
+  /**
+   * Which upstreams to query. Each provider costs one credit per call, so
+   * ?providers=realtor halves the spend when Redfin isn't needed.
+   */
+  const providers = new Set(
+    (sp.get("providers") ?? "realtor,redfin").split(",").map((s) => s.trim().toLowerCase()),
+  );
+
   const query: Record<string, string | number> = {
-    resultCount: limit,
+    // Always ask upstream for the same count so requests for different `limit`
+    // values share one cached response — and one credit.
+    resultCount: Math.max(limit, SEARCH_FETCH_COUNT),
+    page,
     sortOrder: sortOrder && SORTS.has(sortOrder) ? sortOrder : "Recommended",
     searchType: searchType && TYPES.has(searchType) ? searchType : "For_Sale",
   };
@@ -62,24 +86,68 @@ export async function GET(req: NextRequest) {
   if (sp.get("newConstruction") === "true") query.newConstruction = "true";
 
   try {
-    const payload = byCoords
-      ? await realtyFetch("/search/bycoordinates", {
-          ...query,
-          latitude: lat,
-          longitude: lng,
-          radius,
-        })
-      : zip
-        ? await realtyFetch("/search/byzip", { ...query, zipCode: zip })
-        : await realtyFetch("/search/bylocation", { ...query, location });
+    const wantRealtor = providers.has("realtor");
+    const wantRedfin = providers.has("redfin");
 
-    const listings = normalizeListings(payload, limit);
+    const realtorPromise = wantRealtor
+      ? byCoords
+        ? realtyFetch("/search/bycoordinates", {
+            ...query,
+            latitude: lat,
+            longitude: lng,
+            radius,
+          })
+        : zip
+          ? realtyFetch("/search/byzip", { ...query, zipCode: zip })
+          : realtyFetch("/search/bylocation", { ...query, location: canonicalLocation(location) })
+      : Promise.reject(new Error("skipped"));
+
+    // Redfin uses its own parameter names for the same concepts.
+    const redfinPromise = wantRedfin
+      ? byCoords
+        ? redfinFetch("/search/bycoordinates", {
+            latitude: lat,
+            longitude: lng,
+            radius,
+            resultCount: Math.max(limit, SEARCH_FETCH_COUNT),
+            page,
+            searchType: query.searchType,
+          })
+        : redfinFetch("/search/bylocation", {
+            locationName: zip ?? canonicalLocation(location),
+            resultCount: Math.max(limit, SEARCH_FETCH_COUNT),
+            page,
+            searchType: query.searchType,
+          })
+      : Promise.reject(new Error("skipped"));
+
+    const [realtorRes, redfinRes] = await Promise.allSettled([realtorPromise, redfinPromise]);
+
+    const payload = realtorRes.status === "fulfilled" ? realtorRes.value : null;
+    const realtorListings = payload ? normalizeListings(payload, limit) : [];
+    const redfinListings =
+      redfinRes.status === "fulfilled" ? normalizeRedfinListings(redfinRes.value, limit) : [];
+
+    // Realtor first: it carries photos, Redfin doesn't, so on a duplicate
+    // address the entry with an image wins.
+    const listings = mergeListings([realtorListings, redfinListings], limit);
     const live = listings.length > 0;
+    const nextPageOf = (v: unknown) =>
+      Boolean(v && typeof v === "object" && (v as { nextPage?: boolean }).nextPage);
+    const nextPage =
+      nextPageOf(payload) ||
+      (redfinRes.status === "fulfilled" && nextPageOf(redfinRes.value));
     return NextResponse.json(
       {
         source: live ? "realtyapi" : "sample",
         ...(live ? {} : { note: "Upstream returned no parsable listings." }),
         location: byCoords ? `${lat.toFixed(4)},${lng.toFixed(4)}` : (zip ?? location),
+        page,
+        nextPage,
+        providers: {
+          realtor: realtorListings.length,
+          redfin: redfinListings.length,
+        },
         listings: live ? listings : SAMPLE_LISTINGS.slice(0, limit),
       },
       { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },

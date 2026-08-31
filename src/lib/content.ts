@@ -45,6 +45,29 @@ export const AREAS = [
   { name: "Katy", note: "Family-first, west side commute", count: "674 homes", slot: "[ Katy ]", href: `${IDX}/i/Katy` },
 ];
 
+/**
+ * Sofi Lakes — the Katy master-planned community we represent. Figures are from
+ * sofilakes.com; update them here when sections sell through or pricing moves.
+ */
+export const SOFI_LAKES = {
+  name: "Sofi Lakes",
+  place: "Katy, TX \u00b7 Waller County",
+  href: "https://sofilakes.com",
+  builders: ["Lennar", "Coventry Homes", "Westin Homes", "Chesmar Homes", "Imagination Homes"],
+  amenities: "Resort pools with cabanas, pickleball, playgrounds, an open-air fitness area, and lakes.",
+  /* Community marketing photos, downscaled from sofilakes.com/gallery. */
+  photos: [
+    { src: "/sofi-lakes/photo-entrance.jpg", alt: "The Sofi Lakes community entrance" },
+    { src: "/sofi-lakes/photo-model-coventry.jpg", alt: "A Coventry Homes model at Sofi Lakes" },
+  ],
+  facts: [
+    { value: "390", label: "Homesites across two sections" },
+    { value: "$240K\u2013$700K", label: "1,400\u20136,000 sqft, 3\u20136 bd" },
+    { value: "150 acres", label: "Green space, 5+ miles of trail" },
+    { value: "24", label: "Homes that actually touch water" },
+  ],
+};
+
 export const REVIEWS = [
   { quote: "We bought from Colorado without setting foot in the house. Every question got a straight answer, including the ones that talked us out of two other places.", name: "THE FERRELLS · KATY" },
   { quote: "Listed Thursday, three offers by Monday. The pricing conversation up front was the whole thing.", name: "D. OKONKWO · SUGAR LAND" },
