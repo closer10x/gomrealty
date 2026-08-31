@@ -940,7 +940,7 @@ a.pin-popup-inner:hover { color: inherit; transform: translateY(-2px); }
    a phone width would be uselessly small. */
 .gallery {
   padding: 16px var(--gutter) 0; display: flex; flex-direction: column; gap: 10px;
-  max-width: min(620px, 100%); box-sizing: content-box;
+  max-width: min(620px, 100%); box-sizing: content-box; margin-inline: auto;
 }
 .gallery-main {
   position: relative; display: block; width: 100%; padding: 0; overflow: hidden;
@@ -962,7 +962,7 @@ a.pin-popup-inner:hover { color: inherit; transform: translateY(-2px); }
 .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery-thumb.is-active { border-color: var(--brand-mid); }
 .gallery-empty {
-  margin: 16px var(--gutter) 0; max-width: min(620px, 100%); aspect-ratio: 16 / 7; border-radius: 18px;
+  margin: 16px auto 0; max-width: min(620px, 100%); aspect-ratio: 16 / 7; border-radius: 18px;
   background: var(--hatch); display: grid; place-items: center;
 }
 
