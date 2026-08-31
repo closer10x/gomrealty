@@ -26,6 +26,7 @@ on live data and storage.
 | `SUPABASE_SERVICE_ROLE_KEY` | for leads | **Server only.** Bypasses RLS. |
 | `REALTYAPI_KEY` | for live MLS | **Server only.** Sent as `x-realtyapi-key`. |
 | `REALTYAPI_BASE_URL` | no | Defaults to `https://realtor.realtyapi.io`. |
+| `REDFIN_API_BASE_URL` | no | Defaults to `https://redfin.realtyapi.io`. |
 | `NEXT_PUBLIC_DEFAULT_LOCATION` | no | Market the homepage map opens on. |
 
 Neither the RealtyAPI key nor the service-role key is ever sent to the browser —
@@ -49,6 +50,22 @@ between shapes, so `extractResults()` probes the known locations rather than
 assuming one, and `normalizeListing()` is defensive about every field.
 
 Listing search is billed per credit, so responses are cached (`s-maxage=300`).
+
+### Redfin
+
+Redfin runs on the **same** `REALTYAPI_KEY` and `x-realtyapi-key` header but a
+different host, and carries the neighborhood signal the Realtor endpoints don't:
+schools, flood and climate risk, walk score, and market trends.
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/redfin/neighborhood?location=` | The "honest read on the neighborhood" the homepage promises — fans out across schools, climate risk, market hotness, and housing trends. Sections resolve independently, so one upstream failing degrades that section instead of the response. Cached 1h. |
+| `GET /api/redfin/<endpoint>` | Passthrough to any allowlisted Redfin endpoint. Redfin mixes nested and flat paths, so both readings are tried: `/api/redfin/search-bylocation` → `/search/bylocation`, `/api/redfin/schools` → `/schools`. |
+
+Redfin's parameter names differ from Realtor's for the same concepts
+(`locationName` vs `location`, `query` vs `input`) — the passthrough does not
+translate them, so pass what the Redfin spec expects. Note its `/autocomplete`
+also requires `listingStatus`, which the spec does not mark as required.
 
 ### MCP
 

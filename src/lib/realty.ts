@@ -12,6 +12,48 @@ import "server-only";
 export const REALTY_BASE =
   process.env.REALTYAPI_BASE_URL?.replace(/\/+$/, "") ?? "https://realtor.realtyapi.io";
 
+/**
+ * Redfin sits on the same RealtyAPI key and auth header but a different host,
+ * and carries the neighborhood data the Realtor endpoints don't: schools,
+ * flood and climate risk, walk score, and market trends.
+ */
+export const REDFIN_BASE =
+  process.env.REDFIN_API_BASE_URL?.replace(/\/+$/, "") ?? "https://redfin.realtyapi.io";
+
+export const REDFIN_ENDPOINTS = [
+  "/autocomplete",
+  "/search/bylocation",
+  "/search/bycoordinates",
+  "/search/bypolygon",
+  "/search/byregionid",
+  "/search/byurl",
+  "/detailsbyid",
+  "/detailsbyaddress",
+  "/detailsbyurl",
+  "/basicDetails",
+  "/overview",
+  "/mainHouseInfoPanelInfo",
+  "/amenities",
+  "/insights",
+  "/avm",
+  "/schools",
+  "/climateRisk",
+  "/floodInfo",
+  "/walkScore",
+  "/housingMarketTrends",
+  "/usHousingMarketTrends",
+  "/marketHotness",
+  "/hotMarketInfo",
+  "/recentlySold",
+  "/priceDropInfo",
+  "/popularityInfo",
+  "/tourInsights",
+  "/mortgageCalculatorInfo",
+  "/agentInfo",
+] as const;
+
+export type RedfinEndpoint = (typeof REDFIN_ENDPOINTS)[number];
+
 /** Endpoints the proxy is allowed to reach. Anything else is rejected. */
 export const REALTY_ENDPOINTS = [
   "/search/bylocation",
@@ -59,6 +101,24 @@ type QueryValue = string | number | boolean | null | undefined;
 export async function realtyFetch<T = unknown>(
   endpoint: RealtyEndpoint,
   query: Record<string, QueryValue> = {},
+  opts: { revalidate?: number; signal?: AbortSignal } = {},
+): Promise<T> {
+  return providerFetch<T>(REALTY_BASE, endpoint, query, opts);
+}
+
+/** Same key and auth header, different host. */
+export async function redfinFetch<T = unknown>(
+  endpoint: RedfinEndpoint,
+  query: Record<string, QueryValue> = {},
+  opts: { revalidate?: number; signal?: AbortSignal } = {},
+): Promise<T> {
+  return providerFetch<T>(REDFIN_BASE, endpoint, query, opts);
+}
+
+async function providerFetch<T = unknown>(
+  base: string,
+  endpoint: string,
+  query: Record<string, QueryValue> = {},
   { revalidate = 300, signal }: { revalidate?: number; signal?: AbortSignal } = {},
 ): Promise<T> {
   const key = process.env.REALTYAPI_KEY;
@@ -66,7 +126,7 @@ export async function realtyFetch<T = unknown>(
     throw new RealtyApiError("REALTYAPI_KEY is not set", 503);
   }
 
-  const url = new URL(REALTY_BASE + endpoint);
+  const url = new URL(base + endpoint);
   for (const [k, v] of Object.entries(query)) {
     if (v === null || v === undefined || v === "") continue;
     url.searchParams.set(k, String(v));
