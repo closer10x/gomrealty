@@ -476,3 +476,74 @@ textarea.field { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* ------------------------------------------------------------------ *
+ * Live Mapbox map. Applies only when NEXT_PUBLIC_MAPBOX_TOKEN is set;
+ * without it the hero keeps the comp's decorative map above.
+ * ------------------------------------------------------------------ */
+
+.mapbox-canvas { position: absolute; inset: 0; }
+
+/* Marker elements are created imperatively, so they can't use inline vars. */
+.mapbox-pin {
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; padding: 0; background: none; border: none;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mapbox-pin .pin-bubble {
+  padding: 7px 14px; border-radius: 22px; font-size: 14px; font-weight: 600;
+  letter-spacing: -0.02em; white-space: nowrap;
+  background: var(--surface); color: var(--brand);
+  box-shadow: 0 3px 12px oklch(0.4 0.02 155 / 0.16);
+}
+.mapbox-pin .pin-tip {
+  width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-top: 8px solid var(--surface);
+}
+.mapbox-pin:hover { transform: scale(1.06); z-index: 40; }
+.mapbox-pin.is-active { z-index: 50; transform: scale(1.14); }
+.mapbox-pin.is-active .pin-bubble { background: var(--brand-mid); color: var(--on-brand-hi); }
+.mapbox-pin.is-active .pin-tip { border-top-color: var(--brand-mid); }
+
+/* The live map owns the full hero; the panel floats over it. */
+.hero-live .hero-map { left: 0; right: 0; top: 0; bottom: 0; }
+.hero-live .hero-panel { z-index: 40; }
+.hero-live .mapboxgl-ctrl-bottom-left { left: 500px; bottom: 26px; }
+.hero-live .mapboxgl-ctrl-group { border-radius: 12px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.hero-live .mapboxgl-ctrl-group button { width: 42px; height: 42px; }
+.hero-live .mapboxgl-ctrl-bottom-right { margin-bottom: 2px; }
+.hero-live .mapboxgl-ctrl-attrib { font-size: 10px; background: oklch(1 0 0 / 0.75); }
+
+.active-photo-link { display: block; color: inherit; }
+.active-photo-link:hover { color: inherit; }
+.active-photo-link:hover .active-photo { filter: brightness(1.04); }
+
+/* Desktop shows map and list together, so the switch is mobile-only. */
+.view-toggle { display: none; }
+
+@media (max-width: 900px) {
+  .hero-live { display: flex; flex-direction: column; }
+
+  .view-toggle {
+    display: flex; gap: 4px; margin: 14px var(--gutter) 0; padding: 4px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 24px;
+    order: -1; align-self: flex-start;
+  }
+  .view-toggle button {
+    padding: 9px 22px; border-radius: 20px; font-size: 13px; font-weight: 500;
+    color: var(--ink-nav); transition: background 120ms ease, color 120ms ease;
+  }
+  .view-toggle button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
+
+  /* One pane at a time on small screens. */
+  .hero-live.view-map .hero-panel .search-card { display: none; }
+  .hero-live.view-map .hero-map { height: 460px; }
+  .hero-live.view-list .hero-map,
+  .hero-live.view-list .active-card,
+  .hero-live.view-list .hero-badges { display: none; }
+  .hero-live.view-list .hero-panel { margin-top: 0; }
+  .hero-live.view-list .result-list { max-height: none; }
+
+  .hero-live .hero-map { position: relative; }
+  .hero-live .mapboxgl-ctrl-bottom-left { left: 0; bottom: 0; }
+}

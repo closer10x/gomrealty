@@ -27,6 +27,12 @@ export async function GET(req: NextRequest) {
   const zip = sp.get("zipCode")?.trim();
   const limit = Math.min(Math.max(Number(sp.get("limit") ?? 7) || 7, 1), 50);
 
+  // Map panning searches by viewport centre + radius rather than by name.
+  const lat = Number(sp.get("latitude"));
+  const lng = Number(sp.get("longitude"));
+  const byCoords = Number.isFinite(lat) && Number.isFinite(lng);
+  const radius = Math.min(Math.max(Number(sp.get("radius")) || 5, 0.5), 50);
+
   if (!realtyConfigured()) {
     return NextResponse.json({
       source: "sample",
@@ -51,9 +57,16 @@ export async function GET(req: NextRequest) {
   if (sp.get("newConstruction") === "true") query.newConstruction = "true";
 
   try {
-    const payload = zip
-      ? await realtyFetch("/search/byzip", { ...query, zipCode: zip })
-      : await realtyFetch("/search/bylocation", { ...query, location });
+    const payload = byCoords
+      ? await realtyFetch("/search/bycoordinates", {
+          ...query,
+          latitude: lat,
+          longitude: lng,
+          radius,
+        })
+      : zip
+        ? await realtyFetch("/search/byzip", { ...query, zipCode: zip })
+        : await realtyFetch("/search/bylocation", { ...query, location });
 
     const listings = normalizeListings(payload, limit);
     const live = listings.length > 0;
@@ -61,7 +74,7 @@ export async function GET(req: NextRequest) {
       {
         source: live ? "realtyapi" : "sample",
         ...(live ? {} : { note: "Upstream returned no parsable listings." }),
-        location: zip ?? location,
+        location: byCoords ? `${lat.toFixed(4)},${lng.toFixed(4)}` : (zip ?? location),
         listings: live ? listings : SAMPLE_LISTINGS.slice(0, limit),
       },
       { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },

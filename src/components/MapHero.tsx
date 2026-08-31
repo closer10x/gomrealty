@@ -1,18 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FILTERS, FILTER_QUERY, IDX } from "@/lib/content";
 import { PIN_POSITIONS } from "@/lib/sampleListings";
+import dynamic from "next/dynamic";
+import DecorativeMap from "./DecorativeMap";
 import type { Listing } from "@/lib/realty";
+
+/**
+ * mapbox-gl is ~500 kB. Load it only when a token actually exists, so the
+ * homepage bundle is unchanged for anyone running without one.
+ */
+const PropertyMap = dynamic(() => import("./PropertyMap"), { ssr: false });
 
 type Props = { initialListings: Listing[]; initialSource: "realtyapi" | "sample" };
 
-/**
- * The design's map hero. Pins, the result list, and the detail card are driven
- * by whatever /api/realty/search returns; when that is sample data the strip
- * says so rather than passing stock inventory off as live.
- */
+const HAS_MAP = Boolean(process.env.NEXT_PUBLIC_MAPBOX_TOKEN);
+
 export default function MapHero({ initialListings, initialSource }: Props) {
   const [listings, setListings] = useState(initialListings);
   const [source, setSource] = useState(initialSource);
@@ -22,104 +27,112 @@ export default function MapHero({ initialListings, initialSource }: Props) {
   const [zoom, setZoom] = useState(1);
   const [draw, setDraw] = useState(false);
   const [loading, setLoading] = useState(false);
+  /** Mobile only — desktop shows both panes side by side. */
+  const [view, setView] = useState<"map" | "list">("map");
 
   const submittedRef = useRef("");
+  const reqRef = useRef(0);
 
-  /** Refetch when the filter chip or the submitted search term changes. */
-  async function load(nextFilter: string, location: string) {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ limit: "7", ...FILTER_QUERY[nextFilter] });
-      if (location.trim()) {
-        // A bare 5-digit value is a ZIP; anything else is a free-text location.
-        if (/^\d{5}$/.test(location.trim())) params.set("zipCode", location.trim());
-        else params.set("location", location.trim());
+  const load = useCallback(
+    async (nextFilter: string, location: string, coords?: { lat: number; lng: number; radiusMiles: number }) => {
+      const seq = ++reqRef.current;
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: "12", ...FILTER_QUERY[nextFilter] });
+        if (coords) {
+          params.set("latitude", String(coords.lat));
+          params.set("longitude", String(coords.lng));
+          params.set("radius", coords.radiusMiles.toFixed(1));
+        } else if (location.trim()) {
+          if (/^\d{5}$/.test(location.trim())) params.set("zipCode", location.trim());
+          else params.set("location", location.trim());
+        }
+
+        const res = await fetch(`/api/realty/search?${params}`);
+        const data = await res.json();
+        // Ignore a slow response that a newer request has already superseded.
+        if (seq !== reqRef.current) return;
+
+        if (Array.isArray(data.listings) && data.listings.length) {
+          setListings(data.listings);
+          setSource(data.source === "realtyapi" ? "realtyapi" : "sample");
+          setSelected(0);
+        }
+      } catch {
+        /* keep the current listings on a network blip */
+      } finally {
+        if (seq === reqRef.current) setLoading(false);
       }
-      const res = await fetch(`/api/realty/search?${params}`);
-      const data = await res.json();
-      if (Array.isArray(data.listings) && data.listings.length) {
-        setListings(data.listings);
-        setSource(data.source === "realtyapi" ? "realtyapi" : "sample");
-        setSelected(0);
-      }
-    } catch {
-      /* keep the current listings on a network blip */
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    // Skip the first run — the server already supplied initialListings.
-    if (filter === FILTERS[0] && submittedRef.current === "") return;
-    void load(filter, submittedRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
-
-  const active = listings[selected] ?? listings[0];
-
-  const pins = useMemo(
-    () =>
-      listings.map((l, i) => ({
-        listing: l,
-        pos: PIN_POSITIONS[i % PIN_POSITIONS.length],
-      })),
-    [listings],
+    },
+    [],
   );
 
+  useEffect(() => {
+    if (filter === FILTERS[0] && submittedRef.current === "") return;
+    void load(filter, submittedRef.current);
+  }, [filter, load]);
+
+  const handleMoveEnd = useCallback(
+    (c: { lat: number; lng: number; radiusMiles: number }) => {
+      void load(filter, "", c);
+    },
+    [filter, load],
+  );
+
+  const active = listings[selected] ?? listings[0];
   if (!active) return null;
 
   return (
-    <section className="hero">
-      <div className="hero-map" aria-hidden>
-        <div className="hero-grid" />
-        <div className="blk-park-a" />
-        <div className="blk-park-b" />
-        <div className="blk-water" />
-        <div className="rd-i10" />
-        <div className="rd-i10-ln" />
-        <div className="rd-blt" />
-        <div className="rd-minor" />
-        <div className="map-label lbl-park">BEAR CREEK PARK</div>
-        <div className="map-label lbl-bayou">BUFFALO BAYOU</div>
-        <div className="map-label lbl-i10">I-10 KATY FWY</div>
-        <div className="map-label lbl-blt">BELTWAY 8</div>
-
-        <div className="pin-layer">
-          {pins.map(({ listing, pos }, i) => {
-            const on = i === selected;
-            return (
-              <button
-                key={listing.id}
-                type="button"
-                className="pin"
-                aria-label={`${listing.priceFull} — ${listing.address}`}
-                aria-pressed={on}
-                onClick={() => setSelected(i)}
-                style={{
-                  left: pos.left,
-                  top: pos.top,
-                  transform: `translate(-50%, -100%) scale(${(on ? 1.14 : 1) * zoom})`,
-                  zIndex: on ? 50 : 20,
-                }}
-              >
-                <span
-                  className="pin-bubble"
-                  style={{
-                    background: on ? "var(--brand-mid)" : "var(--surface)",
-                    color: on ? "var(--on-brand-hi)" : "var(--brand)",
-                  }}
-                >
-                  {listing.priceShort}
-                </span>
-                <span
-                  className="pin-tip"
-                  style={{ borderTop: `8px solid ${on ? "var(--brand-mid)" : "var(--surface)"}` }}
-                />
-              </button>
-            );
-          })}
-        </div>
+    <section className={`hero${HAS_MAP ? " hero-live" : ""} view-${view}`}>
+      <div className="hero-map" aria-hidden={!HAS_MAP}>
+        {HAS_MAP ? (
+          <PropertyMap
+            listings={listings}
+            selected={selected}
+            onSelect={setSelected}
+            onMoveEnd={handleMoveEnd}
+          />
+        ) : (
+          <>
+            <DecorativeMap />
+            <div className="pin-layer">
+              {listings.slice(0, PIN_POSITIONS.length).map((l, i) => {
+                const on = i === selected;
+                const pos = PIN_POSITIONS[i % PIN_POSITIONS.length];
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    className="pin"
+                    aria-label={`${l.priceFull} — ${l.address}`}
+                    aria-pressed={on}
+                    onClick={() => setSelected(i)}
+                    style={{
+                      left: pos.left,
+                      top: pos.top,
+                      transform: `translate(-50%, -100%) scale(${(on ? 1.14 : 1) * zoom})`,
+                      zIndex: on ? 50 : 20,
+                    }}
+                  >
+                    <span
+                      className="pin-bubble"
+                      style={{
+                        background: on ? "var(--brand-mid)" : "var(--surface)",
+                        color: on ? "var(--on-brand-hi)" : "var(--brand)",
+                      }}
+                    >
+                      {l.priceShort}
+                    </span>
+                    <span
+                      className="pin-tip"
+                      style={{ borderTop: `8px solid ${on ? "var(--brand-mid)" : "var(--surface)"}` }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="hero-panel">
@@ -211,6 +224,16 @@ export default function MapHero({ initialListings, initialSource }: Props) {
         </div>
       </div>
 
+      {/* Mobile-only Map / List switch; desktop shows both panes. */}
+      <div className="view-toggle" role="group" aria-label="Choose map or list view">
+        <button type="button" aria-pressed={view === "map"} onClick={() => setView("map")}>
+          Map
+        </button>
+        <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")}>
+          List
+        </button>
+      </div>
+
       <div className="hero-badges">
         <div className="badge">
           <span className="badge-dot" aria-hidden />
@@ -230,22 +253,35 @@ export default function MapHero({ initialListings, initialSource }: Props) {
         <div className="data-note">SAMPLE INVENTORY — ADD REALTYAPI_KEY FOR LIVE MLS</div>
       )}
 
-      <div className="zoom">
-        <button type="button" onClick={() => setZoom((z) => Math.min(1.3, z + 0.1))} aria-label="Zoom in">
-          +
-        </button>
-        <button type="button" onClick={() => setZoom((z) => Math.max(0.8, z - 0.1))} aria-label="Zoom out">
-          −
-        </button>
-      </div>
+      {!HAS_MAP && (
+        <div className="zoom">
+          <button type="button" onClick={() => setZoom((z) => Math.min(1.3, z + 0.1))} aria-label="Zoom in">
+            +
+          </button>
+          <button type="button" onClick={() => setZoom((z) => Math.max(0.8, z - 0.1))} aria-label="Zoom out">
+            −
+          </button>
+        </div>
+      )}
 
       <div className="active-card">
-        <div
-          className="active-photo"
-          style={active.photo ? { backgroundImage: `url(${active.photo})` } : undefined}
-        >
-          {!active.photo && <span className="slot">[ listing photo ]</span>}
-        </div>
+        {active.href ? (
+          <a className="active-photo-link" href={active.href} target="_blank" rel="noopener noreferrer">
+            <div
+              className="active-photo"
+              style={active.photo ? { backgroundImage: `url(${active.photo})` } : undefined}
+            >
+              {!active.photo && <span className="slot">[ listing photo ]</span>}
+            </div>
+          </a>
+        ) : (
+          <div
+            className="active-photo"
+            style={active.photo ? { backgroundImage: `url(${active.photo})` } : undefined}
+          >
+            {!active.photo && <span className="slot">[ listing photo ]</span>}
+          </div>
+        )}
         <div className="active-body">
           <div className="active-head">
             <div className="active-price">{active.priceFull}</div>
