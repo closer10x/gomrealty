@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;600;700&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: oklch(0.985 0.006 120); }
+  * { box-sizing: border-box; }
+  a { color: oklch(0.42 0.11 156); text-decoration: none; }
+  a:hover { color: oklch(0.3 0.09 156); }
+  input, textarea { font-family: 'Archivo', sans-serif; }
+  ::placeholder { color: oklch(0.62 0.008 150); }
+</style>
+</helmet>
+<div style="font-family: 'Archivo', system-ui, sans-serif; color: oklch(0.25 0.02 155); background: oklch(0.985 0.006 120); overflow-x: hidden;">
+
+  <header style="position: sticky; top: 0; z-index: 80; display: flex; align-items: center; justify-content: space-between; gap: 40px; padding: 14px 34px; background: oklch(0.985 0.006 120 / 0.9); backdrop-filter: blur(16px); border-bottom: 1px solid oklch(0.9 0.008 140);">
+    <div onClick="{{ goHome }}" style="display: flex; align-items: center; gap: 11px; cursor: pointer;">
+      <div style="width: 38px; height: 38px; border-radius: 11px; background: oklch(0.34 0.07 156); display: grid; place-items: center; position: relative; overflow: hidden;">
+        <div style="width: 17px; height: 17px; border-radius: 50% 50% 50% 2px; transform: rotate(-45deg); border: 2.5px solid oklch(0.88 0.16 148);"></div>
+        <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: oklch(0.88 0.16 148);"></div>
+      </div>
+      <div style="display: flex; flex-direction: column; line-height: 1;">
+        <span style="font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -0.03em;">GO M REALTY</span>
+        <span style="font-size: 8.5px; font-weight: 500; letter-spacing: 0.26em; color: oklch(0.52 0.02 150); margin-top: 5px;">GREATER HOUSTON</span>
+      </div>
+    </div>
+    <nav style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500;">
+      <sc-for list="{{ nav }}" as="item" hint-placeholder-count="4">
+        <div onClick="{{ item.go }}" style="cursor: pointer; padding: 9px 15px; border-radius: 20px; color: {{ item.fg }}; background: {{ item.bg }};" style-hover="background: oklch(0.93 0.012 145);">{{ item.label }}</div>
+      </sc-for>
+      <a href="tel:8325147301" style="margin-left: 12px; padding: 11px 20px; border-radius: 22px; background: oklch(0.34 0.07 156); color: oklch(0.98 0.01 140); font-size: 13px; font-weight: 500;" style-hover="background: oklch(0.42 0.11 156);">832.514.7301</a>
+    </nav>
+  </header>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <!-- MAP HERO -->
+    <section style="position: relative; height: 88vh; min-height: 820px; background: oklch(0.955 0.012 145); overflow: hidden;">
+      <div style="position: absolute; left: 500px; right: -8%; top: -8%; bottom: -8%; overflow: hidden;">
+        <div style="position: absolute; inset: 0; background-image: linear-gradient(oklch(0.9 0.016 145) 1.5px, transparent 1.5px), linear-gradient(90deg, oklch(0.9 0.016 145) 1.5px, transparent 1.5px); background-size: 64px 64px; transform: rotate(-3deg);"></div>
+        <div style="position: absolute; left: 36%; top: 6%; width: 20%; height: 20%; border-radius: 18px; background: oklch(0.905 0.055 150);"></div>
+        <div style="position: absolute; right: 6%; bottom: 10%; width: 24%; height: 26%; border-radius: 18px; background: oklch(0.905 0.055 150);"></div>
+        <div style="position: absolute; left: 26%; bottom: 2%; width: 34%; height: 20%; border-radius: 45% 55% 40% 60%; background: oklch(0.9 0.045 235);"></div>
+        <div style="position: absolute; left: 34%; right: -6%; top: 36%; height: 20px; background: oklch(1 0 0); transform: rotate(2.5deg);"></div>
+        <div style="position: absolute; left: 34%; right: -6%; top: 36.6%; height: 2px; background: oklch(0.84 0.1 150); transform: rotate(2.5deg);"></div>
+        <div style="position: absolute; top: -6%; left: 56%; width: 17px; height: 116%; background: oklch(1 0 0); transform: rotate(-5deg);"></div>
+        <div style="position: absolute; left: 34%; right: -6%; top: 74%; height: 9px; background: oklch(0.975 0.008 145); transform: rotate(-2deg);"></div>
+        <div style="position: absolute; left: 37%; top: 8%; font-size: 11px; letter-spacing: 0.1em; color: oklch(0.5 0.075 152);">BEAR CREEK PARK</div>
+        <div style="position: absolute; left: 30%; bottom: 6%; font-size: 11px; letter-spacing: 0.1em; color: oklch(0.52 0.09 235);">BUFFALO BAYOU</div>
+        <div style="position: absolute; left: 42%; top: 35.4%; font-size: 11px; letter-spacing: 0.1em; color: oklch(0.52 0.02 150); transform: rotate(2.5deg);">I-10 KATY FWY</div>
+        <div style="position: absolute; left: 57.5%; top: 16%; font-size: 11px; letter-spacing: 0.1em; color: oklch(0.52 0.02 150); transform: rotate(-5deg);">BELTWAY 8</div>
+      </div>
+
+      <div style="position: absolute; left: 520px; right: 24px; top: 108px; bottom: 40px; z-index: 20;">
+        <sc-for list="{{ pins }}" as="pin" hint-placeholder-count="7">
+          <div onClick="{{ pin.pick }}" style="position: absolute; left: {{ pin.left }}; top: {{ pin.top }}; transform: translate(-50%, -100%) scale({{ pin.scale }}); z-index: {{ pin.z }}; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);">
+            <div style="padding: 7px 14px; border-radius: 22px; font-size: 14px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; background: {{ pin.bg }}; color: {{ pin.fg }}; box-shadow: 0 3px 12px oklch(0.4 0.02 155 / 0.16);">{{ pin.price }}</div>
+            <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid {{ pin.bg }};"></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="position: absolute; left: 34px; top: 40px; width: 452px; z-index: 40;">
+        <div style="background: oklch(1 0 0); border: 1px solid oklch(0.93 0.008 145); border-radius: 18px; padding: 22px 24px 20px; margin-bottom: 16px; box-shadow: 0 10px 30px oklch(0.4 0.02 155 / 0.1);">
+        <h1 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 58px; line-height: 1.0; letter-spacing: -0.035em; color: oklch(0.22 0.025 155); margin: 0 0 16px;">Start with the map,<br /><span style="color: oklch(0.44 0.13 154);">not the brochure.</span></h1>
+        <p style="font-size: 15.5px; line-height: 1.55; color: oklch(0.4 0.012 150); margin: 0; max-width: 40ch;">Every active listing across Greater Houston, with an honest read on the neighborhood behind each pin.</p>
+        </div>
+
+        <div style="background: oklch(1 0 0); border-radius: 18px; box-shadow: 0 14px 44px oklch(0.4 0.02 155 / 0.14); overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 11px; padding: 15px 18px; border-bottom: 1px solid oklch(0.93 0.006 140);">
+            <div style="width: 14px; height: 14px; border: 2px solid oklch(0.5 0.01 150); border-radius: 50%; flex: none; position: relative;"><div style="position: absolute; right: -4px; bottom: -3px; width: 6px; height: 2px; background: oklch(0.5 0.01 150); transform: rotate(45deg);"></div></div>
+            <input placeholder="City, ZIP, neighborhood, or MLS #" style="border: none; outline: none; background: transparent; font-size: 15px; color: oklch(0.25 0.02 155); width: 100%;" />
+          </div>
+          <div style="display: flex; gap: 7px; padding: 13px 18px; overflow-x: auto;">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+              <div onClick="{{ f.pick }}" style="cursor: pointer; white-space: nowrap; padding: 7px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 500; border: 1px solid {{ f.border }}; background: {{ f.bg }}; color: {{ f.fg }};">{{ f.label }}</div>
+            </sc-for>
+          </div>
+          <div style="max-height: 196px; overflow-y: auto; padding: 4px 10px 10px;">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+              <div onClick="{{ r.pick }}" style="cursor: pointer; display: flex; gap: 13px; padding: 10px; border-radius: 12px; background: {{ r.bg }};">
+                <div style="width: 88px; height: 68px; flex: none; border-radius: 9px; background: repeating-linear-gradient(135deg, oklch(0.9 0.012 140) 0 9px, oklch(0.94 0.008 140) 9px 18px);"></div>
+                <div style="min-width: 0; padding-top: 2px;">
+                  <div style="font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 2px;">{{ r.price }}</div>
+                  <div style="font-size: 12.5px; color: oklch(0.4 0.008 150); margin-bottom: 3px;">{{ r.specs }}</div>
+                  <div style="font-size: 12px; color: oklch(0.55 0.008 150); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ r.address }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 9px; padding: 12px 18px 16px; border-top: 1px solid oklch(0.93 0.006 140);">
+            <a href="https://go-mrealty.idxbroker.com/idx/map/mapsearch" style="flex: 1; text-align: center; padding: 13px; border-radius: 24px; background: oklch(0.34 0.07 156); color: oklch(0.98 0.01 140); font-size: 13px; font-weight: 500;" style-hover="background: oklch(0.42 0.11 156);">Search all listings</a>
+            <div onClick="{{ goSellers }}" style="cursor: pointer; flex: 1; text-align: center; padding: 13px; border-radius: 24px; border: 1px solid oklch(0.84 0.01 145); font-size: 13px; font-weight: 500;" style-hover="background: oklch(0.96 0.008 140);">Free valuation</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position: absolute; right: 34px; top: 40px; display: flex; gap: 8px; z-index: 40;">
+        <div style="display: flex; align-items: center; gap: 8px; background: oklch(1 0 0 / 0.95); padding: 10px 16px; border-radius: 22px; box-shadow: 0 4px 16px oklch(0.4 0.02 155 / 0.12); font-size: 13px; font-weight: 500;">
+          <div style="width: 7px; height: 7px; border-radius: 50%; background: oklch(0.62 0.16 148);"></div>{{ pinCount }} homes in view
+        </div>
+        <div onClick="{{ toggleDraw }}" style="cursor: pointer; background: {{ drawBg }}; color: {{ drawFg }}; padding: 10px 16px; border-radius: 22px; box-shadow: 0 4px 16px oklch(0.4 0.02 155 / 0.12); font-size: 13px; font-weight: 500;">Draw search area</div>
+      </div>
+
+      <div style="position: absolute; left: 520px; bottom: 34px; display: flex; flex-direction: column; background: oklch(1 0 0); border-radius: 12px; box-shadow: 0 4px 16px oklch(0.4 0.02 155 / 0.12); overflow: hidden; z-index: 40;">
+        <div onClick="{{ zoomIn }}" style="cursor: pointer; width: 42px; height: 42px; display: grid; place-items: center; font-size: 20px; color: oklch(0.3 0.008 150); border-bottom: 1px solid oklch(0.93 0.006 140);" style-hover="background: oklch(0.96 0.008 140);">+</div>
+        <div onClick="{{ zoomOut }}" style="cursor: pointer; width: 42px; height: 42px; display: grid; place-items: center; font-size: 20px; color: oklch(0.3 0.008 150);" style-hover="background: oklch(0.96 0.008 140);">−</div>
+      </div>
+
+      <div style="position: absolute; right: 34px; bottom: 34px; width: 306px; background: oklch(1 0 0); border-radius: 16px; box-shadow: 0 14px 40px oklch(0.4 0.02 155 / 0.14); overflow: hidden; z-index: 40;">
+        <div style="height: 138px; background: repeating-linear-gradient(135deg, oklch(0.89 0.012 140) 0 10px, oklch(0.93 0.008 140) 10px 20px); display: flex; align-items: flex-end; padding: 12px;">
+          <span style="font-family: ui-monospace, monospace; font-size: 10px; color: oklch(0.48 0.02 150);">{{ active.slot }}</span>
+        </div>
+        <div style="padding: 15px 18px 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 5px;">
+            <div style="font-size: 23px; font-weight: 700; letter-spacing: -0.025em;">{{ active.price }}</div>
+            <div style="font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; color: oklch(0.42 0.11 156);">{{ active.statusUpper }}</div>
+          </div>
+          <div style="font-size: 14px; margin-bottom: 4px;">{{ active.address }}</div>
+          <div style="font-size: 12.5px; color: oklch(0.5 0.008 150);">{{ active.specs }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAT STRIP -->
+    <section style="display: grid; grid-template-columns: repeat(4, 1fr); background: oklch(0.945 0.028 148); color: oklch(0.24 0.02 155); border-top: 1px solid oklch(0.9 0.02 145); border-bottom: 1px solid oklch(0.9 0.02 145);">
+      <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+        <div style="padding: 34px 30px; border-right: 1px solid oklch(0.9 0.02 145);">
+          <div style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 38px; line-height: 1; margin-bottom: 8px; color: oklch(0.44 0.12 156);">{{ s.value }}</div>
+          <div style="font-size: 12.5px; line-height: 1.5; color: oklch(0.42 0.008 150);">{{ s.label }}</div>
+        </div>
+      </sc-for>
+    </section>
+
+    <!-- AREAS -->
+    <section style="padding: 96px 34px; border-bottom: 1px solid oklch(0.9 0.008 140);">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; margin-bottom: 44px; flex-wrap: wrap;">
+        <h2 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 50px; line-height: 1.04; letter-spacing: -0.035em; margin: 0;">Five markets,<br />street by street</h2>
+        <p style="font-size: 16px; line-height: 1.6; color: oklch(0.42 0.008 150); margin: 0; max-width: 42ch;">Each one prices differently, floods differently, and taxes differently. Pick one to see everything listed today.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;">
+        <sc-for list="{{ areas }}" as="a" hint-placeholder-count="5">
+          <a href="{{ a.href }}" style="display: block; color: inherit;">
+            <div style="aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; background: repeating-linear-gradient(135deg, oklch(0.9 0.012 140) 0 11px, oklch(0.94 0.008 140) 11px 22px); display: flex; flex-direction: column; justify-content: space-between; padding: 16px; margin-bottom: 14px;">
+              <div style="align-self: flex-start; padding: 5px 11px; border-radius: 16px; background: oklch(1 0 0 / 0.9); font-size: 11px; font-weight: 600;">{{ a.count }}</div>
+              <span style="font-family: ui-monospace, monospace; font-size: 10px; color: oklch(0.48 0.02 150);">{{ a.slot }}</span>
+            </div>
+            <div style="font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 3px;">{{ a.name }}</div>
+            <div style="font-size: 12.5px; color: oklch(0.48 0.008 150);">{{ a.note }}</div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- BUY / SELL -->
+    <section style="display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid oklch(0.9 0.008 140);">
+      <div style="padding: 80px 52px 80px 34px; border-right: 1px solid oklch(0.9 0.008 140);">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em; color: oklch(0.42 0.11 156); margin-bottom: 18px;">BUYING</div>
+        <h3 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 36px; line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 16px;">Know what you're walking into</h3>
+        <p style="font-size: 16.5px; line-height: 1.6; color: oklch(0.4 0.008 150); margin: 0 0 26px; max-width: 44ch;">Flood history, tax rate, HOA, what the house next door actually sold for. In front of you before you write an offer, not after.</p>
+        <div onClick="{{ goBuyers }}" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: oklch(0.42 0.11 156);">For buyers →</div>
+      </div>
+      <div style="padding: 80px 34px 80px 52px;">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em; color: oklch(0.42 0.11 156); margin-bottom: 18px;">SELLING</div>
+        <h3 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 36px; line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 16px;">Priced right the first week</h3>
+        <p style="font-size: 16.5px; line-height: 1.6; color: oklch(0.4 0.008 150); margin: 0 0 26px; max-width: 44ch;">Most of what a listing earns is decided before it goes live. Pricing, prep, photography, and the negotiation that follows.</p>
+        <div onClick="{{ goSellers }}" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: oklch(0.42 0.11 156);">For sellers →</div>
+      </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section style="padding: 96px 34px; border-bottom: 1px solid oklch(0.9 0.008 140);">
+      <h2 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 50px; letter-spacing: -0.035em; margin: 0 0 44px;">What clients say</h2>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+        <sc-for list="{{ reviews }}" as="r" hint-placeholder-count="3">
+          <div style="padding: 30px 28px; border-radius: 18px; background: oklch(0.955 0.014 140);">
+            <p style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 19px; line-height: 1.45; font-weight: 500; letter-spacing: -0.015em; margin: 0 0 22px; text-wrap: pretty;">{{ r.quote }}</p>
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.1em; color: oklch(0.47 0.008 150);">{{ r.name }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="padding: 110px 34px; text-align: center;">
+      <h2 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 56px; line-height: 1.04; letter-spacing: -0.035em; margin: 0 0 18px;">Let's talk about your move</h2>
+      <p style="font-size: 17px; line-height: 1.6; color: oklch(0.42 0.008 150); margin: 0 auto 32px; max-width: 48ch;">Fifteen minutes on the phone is usually enough to tell you where you stand. No script, no pressure.</p>
+      <div onClick="{{ goContact }}" style="cursor: pointer; display: inline-block; padding: 17px 36px; border-radius: 28px; background: oklch(0.42 0.11 156); color: oklch(0.98 0.01 140); font-size: 14px; font-weight: 600;" style-hover="background: oklch(0.34 0.07 156);">Schedule a call</div>
+    </section>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isBuyers }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <section style="padding: 84px 34px 66px; border-bottom: 1px solid oklch(0.9 0.008 140); max-width: 1040px;">
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em; color: oklch(0.42 0.11 156); margin-bottom: 22px;">FOR BUYERS</div>
+      <h1 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 60px; line-height: 1.02; letter-spacing: -0.04em; margin: 0 0 22px;">First house, third house, or one you've never seen in person</h1>
+      <p style="font-size: 18px; line-height: 1.58; color: oklch(0.4 0.008 150); margin: 0; max-width: 56ch; text-wrap: pretty;">Houston is a dozen markets wearing one name. What you can afford in Cypress buys something different in the Heights, and the difference is rarely the house.</p>
+    </section>
+
+    <section style="padding: 78px 34px; border-bottom: 1px solid oklch(0.9 0.008 140);">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px;">
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+          <div>
+            <div style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 40px; line-height: 1; color: oklch(0.62 0.1 150); margin-bottom: 14px;">{{ st.num }}</div>
+            <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 10px;">{{ st.title }}</h3>
+            <p style="font-size: 15px; line-height: 1.6; color: oklch(0.42 0.008 150); margin: 0;">{{ st.body }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid oklch(0.9 0.008 140);">
+      <div style="background: repeating-linear-gradient(135deg, oklch(0.9 0.012 140) 0 11px, oklch(0.94 0.008 140) 11px 22px); min-height: 440px; display: flex; align-items: flex-end; padding: 22px;">
+        <span style="font-family: ui-monospace, monospace; font-size: 11px; color: oklch(0.48 0.02 150);">[ photo — clients at the closing table ]</span>
+      </div>
+      <div style="padding: 76px 34px 76px 52px;">
+        <h2 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 40px; line-height: 1.06; letter-spacing: -0.035em; margin: 0 0 18px;">Relocating from out of state</h2>
+        <p style="font-size: 16.5px; line-height: 1.6; color: oklch(0.4 0.008 150); margin: 0 0 16px; max-width: 46ch;">We tour on video, walk the street, and tell you what the listing photos left out. Clients regularly buy here before their first visit.</p>
+        <p style="font-size: 16.5px; line-height: 1.6; color: oklch(0.4 0.008 150); margin: 0 0 28px; max-width: 46ch;">We'll also connect you with lenders, inspectors, and insurance people who understand Texas flood zones and property tax protests.</p>
+        <div onClick="{{ goContact }}" style="cursor: pointer; display: inline-block; padding: 15px 28px; border-radius: 26px; background: oklch(0.34 0.07 156); color: oklch(0.98 0.01 140); font-size: 13px; font-weight: 500;" style-hover="background: oklch(0.42 0.11 156);">Start a relocation call</div>
+      </div>
+    </section>
+
+    <section style="padding: 92px 34px; text-align: center;">
+      <h2 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.035em; margin: 0 0 26px;">Browse everything on the market</h2>
+      <a href="https://go-mrealty.idxbroker.com/idx/search/advanced" style="display: inline-block; padding: 17px 34px; border-radius: 28px; border: 1px solid oklch(0.34 0.07 156); color: oklch(0.34 0.07 156); font-size: 14px; font-weight: 600;" style-hover="background: oklch(0.34 0.07 156); color: oklch(0.98 0.01 140);">Advanced search</a>
+    </section>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isSellers }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <section style="display: grid; grid-template-columns: 1.05fr 0.95fr; border-bottom: 1px solid oklch(0.9 0.008 140);">
+      <div style="padding: 84px 52px 78px 34px;">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em; color: oklch(0.42 0.11 156); margin-bottom: 22px;">FOR SELLERS</div>
+        <h1 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 56px; line-height: 1.02; letter-spacing: -0.04em; margin: 0 0 22px;">What is your house worth this month?</h1>
+        <p style="font-size: 17.5px; line-height: 1.58; color: oklch(0.4 0.008 150); margin: 0 0 32px; max-width: 48ch;">Not an automated estimate. We look at what actually closed on your street, what is sitting unsold, and what that means for your list price.</p>
+        <div style="display: grid; gap: 20px; max-width: 450px;">
+          <sc-for list="{{ sellPoints }}" as="p" hint-placeholder-count="3">
+            <div style="display: flex; gap: 14px; align-items: flex-start;">
+              <div style="width: 8px; height: 8px; border-radius: 50%; background: oklch(0.62 0.16 148); margin-top: 7px; flex: none;"></div>
+              <div>
+                <div style="font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 3px;">{{ p.title }}</div>
+                <div style="font-size: 14.5px; line-height: 1.55; color: oklch(0.43 0.008 150);">{{ p.body }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding: 78px 34px; background: oklch(0.955 0.018 145); color: oklch(0.24 0.02 155); border-left: 1px solid oklch(0.9 0.01 145);">
+        <div style="max-width: 440px;">
+          <h2 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.03em; margin: 0 0 8px;">Request a valuation</h2>
+          <p style="font-size: 14.5px; line-height: 1.55; color: oklch(0.42 0.008 150); margin: 0 0 26px;">We'll send a written estimate within two business days.</p>
+          <div style="display: grid; gap: 12px;">
+            <input placeholder="Full name" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.88 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.24 0.02 155); outline: none;" />
+            <input placeholder="Email" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.88 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.24 0.02 155); outline: none;" />
+            <input placeholder="Phone" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.88 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.24 0.02 155); outline: none;" />
+            <input placeholder="Property address" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.88 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.24 0.02 155); outline: none;" />
+            <textarea placeholder="Anything we should know? Timeline, updates, tenants." rows="3" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.88 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.24 0.02 155); outline: none; resize: vertical;"></textarea>
+            <div onClick="{{ submit }}" style="cursor: pointer; text-align: center; padding: 16px; border-radius: 26px; background: oklch(0.44 0.12 156); color: oklch(0.99 0.01 140); font-size: 14px; font-weight: 600;" style-hover="background: oklch(0.33 0.09 156);">{{ submitLabel }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 88px 34px;">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;">
+        <sc-for list="{{ marketing }}" as="m" hint-placeholder-count="3">
+          <div style="padding: 30px 28px; border-radius: 18px; background: oklch(0.955 0.014 140);">
+            <h3 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.03em; margin: 0 0 12px;">{{ m.title }}</h3>
+            <p style="font-size: 15px; line-height: 1.6; color: oklch(0.42 0.008 150); margin: 0;">{{ m.body }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <section style="padding: 84px 34px 70px; border-bottom: 1px solid oklch(0.9 0.008 140); max-width: 940px;">
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em; color: oklch(0.42 0.11 156); margin-bottom: 22px;">ABOUT</div>
+      <div style="background: oklch(1 0 0); border: 1px solid oklch(0.93 0.008 145); border-radius: 18px; padding: 22px 24px 20px; margin-bottom: 16px; box-shadow: 0 10px 30px oklch(0.4 0.02 155 / 0.1);">
+        <h1 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 58px; line-height: 1.02; letter-spacing: -0.04em; margin: 0 0 22px;">A small team, on purpose</h1>
+      <p style="font-size: 18px; line-height: 1.58; color: oklch(0.4 0.008 150); margin: 0; max-width: 54ch; text-wrap: pretty;">Go M Realty is based in northwest Houston and works across the metro. We keep the roster small, so the person you meet is the person who shows you houses, writes your offer, and sits at your closing.</p>
+    </section>
+
+    <section style="padding: 76px 34px; border-bottom: 1px solid oklch(0.9 0.008 140);">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;">
+        <sc-for list="{{ team }}" as="t" hint-placeholder-count="4">
+          <div>
+            <div style="aspect-ratio: 4 / 5; border-radius: 16px; background: repeating-linear-gradient(135deg, oklch(0.9 0.012 140) 0 11px, oklch(0.94 0.008 140) 11px 22px); display: flex; align-items: flex-end; padding: 14px; margin-bottom: 15px;">
+              <span style="font-family: ui-monospace, monospace; font-size: 10px; color: oklch(0.48 0.02 150);">{{ t.slot }}</span>
+            </div>
+            <div style="font-size: 19px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 3px;">{{ t.name }}</div>
+            <div style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.14em; color: oklch(0.42 0.11 156); margin-bottom: 9px;">{{ t.role }}</div>
+            <div style="font-size: 14.5px; line-height: 1.55; color: oklch(0.43 0.008 150);">{{ t.bio }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="padding: 92px 34px; background: oklch(0.945 0.024 148); color: oklch(0.24 0.02 155);">
+      <h2 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 46px; letter-spacing: -0.035em; margin: 0 0 40px;">How we work</h2>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px;">
+        <sc-for list="{{ values }}" as="v" hint-placeholder-count="3">
+          <div>
+            <h3 style="font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 11px; color: oklch(0.36 0.1 156);">{{ v.title }}</h3>
+            <p style="font-size: 15.5px; line-height: 1.6; color: oklch(0.42 0.008 150); margin: 0;">{{ v.body }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isContact }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <section style="display: grid; grid-template-columns: 1fr 1fr; min-height: 620px;">
+      <div style="padding: 84px 52px 78px 34px; border-right: 1px solid oklch(0.9 0.008 140);">
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.22em; color: oklch(0.42 0.11 156); margin-bottom: 22px;">CONTACT</div>
+        <h1 style="font-family: 'Schibsted Grotesk', system-ui, sans-serif; font-weight: 600; font-size: 52px; line-height: 1.04; letter-spacing: -0.04em; margin: 0 0 24px;">Tell us where you are in the process</h1>
+        <p style="font-size: 17px; line-height: 1.58; color: oklch(0.4 0.008 150); margin: 0 0 42px; max-width: 44ch;">Just starting to look, under contract elsewhere, or deciding whether to sell first. All of it is a normal place to begin.</p>
+        <div style="display: grid; gap: 22px; font-size: 15.5px; line-height: 1.6;">
+          <div>
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: oklch(0.52 0.02 150); margin-bottom: 6px;">OFFICE</div>
+            <div>1334 Brittmoore Rd, Ste 2309<br />Houston, TX 77043</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: oklch(0.52 0.02 150); margin-bottom: 6px;">PHONE</div>
+            <a href="tel:8325147301">832.514.7301</a>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: oklch(0.52 0.02 150); margin-bottom: 6px;">HOURS</div>
+            <div>Showings seven days a week, 8am – 8pm</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 84px 34px; background: oklch(0.955 0.014 140);">
+        <div style="display: grid; gap: 12px; max-width: 450px;">
+          <input placeholder="Full name" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.86 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.25 0.02 155); outline: none;" />
+          <input placeholder="Email" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.86 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.25 0.02 155); outline: none;" />
+          <input placeholder="Phone" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.86 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.25 0.02 155); outline: none;" />
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 4px;">
+            <sc-for list="{{ intents }}" as="i" hint-placeholder-count="4">
+              <div onClick="{{ i.pick }}" style="cursor: pointer; padding: 10px 17px; border-radius: 22px; border: 1px solid {{ i.border }}; font-size: 13px; font-weight: 500; background: {{ i.bg }}; color: {{ i.fg }};">{{ i.label }}</div>
+            </sc-for>
+          </div>
+          <textarea placeholder="What are you working on?" rows="4" style="padding: 15px 16px; border-radius: 10px; border: 1px solid oklch(0.86 0.01 145); background: oklch(1 0 0); font-size: 15px; color: oklch(0.25 0.02 155); outline: none; resize: vertical;"></textarea>
+          <div onClick="{{ submit }}" style="cursor: pointer; text-align: center; padding: 16px; border-radius: 26px; background: oklch(0.34 0.07 156); color: oklch(0.98 0.01 140); font-size: 14px; font-weight: 600;" style-hover="background: oklch(0.42 0.11 156);">{{ submitLabel }}</div>
+        </div>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <footer style="border-top: 1px solid oklch(0.9 0.008 140); padding: 52px 34px 30px; display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <div style="width: 32px; height: 32px; border-radius: 9px; background: oklch(0.34 0.07 156); display: grid; place-items: center; position: relative; overflow: hidden;">
+          <div style="width: 14px; height: 14px; border-radius: 50% 50% 50% 2px; transform: rotate(-45deg); border: 2px solid oklch(0.88 0.16 148);"></div>
+          <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 2.5px; background: oklch(0.88 0.16 148);"></div>
+        </div>
+        <div style="font-weight: 700; font-size: 15px; letter-spacing: -0.03em;">GO M REALTY</div>
+      </div>
+      <div style="font-size: 14px; line-height: 1.6; color: oklch(0.45 0.008 150);">1334 Brittmoore Rd, Ste 2309<br />Houston, TX 77043<br /><a href="tel:8325147301">832.514.7301</a></div>
+    </div>
+    <div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: oklch(0.52 0.02 150); margin-bottom: 14px;">SEARCH</div>
+      <div style="display: grid; gap: 8px; font-size: 14px;">
+        <a href="https://go-mrealty.idxbroker.com/idx/map/mapsearch">Map search</a>
+        <a href="https://go-mrealty.idxbroker.com/idx/search/advanced">Advanced search</a>
+        <a href="https://go-mrealty.idxbroker.com/idx/featured">Featured listings</a>
+        <a href="https://go-mrealty.idxbroker.com/idx/market-reports">Market reports</a>
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: oklch(0.52 0.02 150); margin-bottom: 14px;">COMPANY</div>
+      <div style="display: grid; gap: 8px; font-size: 14px; color: oklch(0.42 0.11 156);">
+        <div onClick="{{ goBuyers }}" style="cursor: pointer;">Buyers</div>
+        <div onClick="{{ goSellers }}" style="cursor: pointer;">Sellers</div>
+        <div onClick="{{ goAbout }}" style="cursor: pointer;">About</div>
+        <div onClick="{{ goContact }}" style="cursor: pointer;">Contact</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: oklch(0.52 0.02 150); margin-bottom: 14px;">FOLLOW</div>
+      <div style="display: grid; gap: 8px; font-size: 14px;">
+        <a href="https://www.facebook.com/GoMRealty">Facebook</a>
+        <a href="https://www.instagram.com/gom_realty/">Instagram</a>
+        <a href="https://go-mrealty.idxbroker.com/idx/contact">Write a review</a>
+      </div>
+    </div>
+    <div style="grid-column: 1 / -1; border-top: 1px solid oklch(0.9 0.008 140); padding-top: 20px; display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; font-size: 12px; color: oklch(0.52 0.01 150);">
+      <div>© 2026 Go M Realty. All information deemed reliable but not guaranteed.</div>
+      <div style="display: flex; gap: 20px;"><span>Privacy Policy</span><span>Terms of Use</span><span>Equal Housing Opportunity</span></div>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { page: 'home', pin: 0, intent: 'Buying', sent: false, zoom: 1, filter: 'For sale', draw: false };
+
+  go(page) {
+    this.setState({ page });
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+  }
+
+  renderVals() {
+    const p = this.state.page;
+    const ink = 'oklch(0.34 0.07 156)';
+    const data = [
+      { price: '$489K', full: '$489,000', left: '19%', top: '30%', address: '14219 Cypress Falls Dr, Cypress', specs: '4 bd · 3 ba · 2,940 sqft', status: 'New', slot: '[ listing photo ]' },
+      { price: '$725K', full: '$725,000', left: '46%', top: '20%', address: '3106 Wickersham Ln, Houston', specs: '4 bd · 3.5 ba · 3,410 sqft · pool', status: 'Open Sat', slot: '[ listing photo ]' },
+      { price: '$1.25M', full: '$1,250,000', left: '72%', top: '36%', address: '27 N Ripple Creek, The Woodlands', specs: '5 bd · 4.5 ba · 4,880 sqft', status: 'Featured', slot: '[ listing photo ]' },
+      { price: '$362K', full: '$362,000', left: '30%', top: '56%', address: '2411 Fallbrook Way, Katy', specs: '3 bd · 2 ba · 1,860 sqft', status: 'New', slot: '[ listing photo ]' },
+      { price: '$598K', full: '$598,000', left: '58%', top: '64%', address: '8802 Riverstone Blvd, Sugar Land', specs: '4 bd · 3 ba · 3,120 sqft · lake lot', status: 'Active', slot: '[ listing photo ]' },
+      { price: '$845K', full: '$845,000', left: '82%', top: '16%', address: '119 Shadowpoint Dr, The Woodlands', specs: '4 bd · 3.5 ba · 3,640 sqft', status: 'Active', slot: '[ listing photo ]' },
+      { price: '$415K', full: '$415,000', left: '40%', top: '44%', address: '5507 Timber Knoll Ct, Houston', specs: '3 bd · 2.5 ba · 2,210 sqft', status: 'Active', slot: '[ listing photo ]' }
+    ];
+    const sel = this.state.pin;
+    const act = data[sel];
+    const pageDefs = [['buyers', 'Buyers'], ['sellers', 'Sellers'], ['about', 'About'], ['contact', 'Contact']];
+
+    return {
+      isHome: p === 'home', isBuyers: p === 'buyers', isSellers: p === 'sellers',
+      isAbout: p === 'about', isContact: p === 'contact',
+      nav: pageDefs.map(([id, label]) => ({
+        label, go: () => this.go(id),
+        bg: p === id ? 'oklch(0.93 0.012 145)' : 'transparent',
+        fg: p === id ? ink : 'oklch(0.32 0.008 150)'
+      })),
+      goHome: () => this.go('home'), goBuyers: () => this.go('buyers'),
+      goSellers: () => this.go('sellers'), goAbout: () => this.go('about'),
+      goContact: () => this.go('contact'),
+      submit: () => this.setState({ sent: true }),
+      submitLabel: this.state.sent ? 'Sent \u2014 we\u2019ll be in touch' : 'Send',
+      pinCount: data.length,
+      active: { price: act.full, address: act.address, specs: act.specs, slot: act.slot, statusUpper: act.status.toUpperCase() },
+      zoomIn: () => this.setState(s => ({ zoom: Math.min(1.3, s.zoom + 0.1) })),
+      zoomOut: () => this.setState(s => ({ zoom: Math.max(0.8, s.zoom - 0.1) })),
+      toggleDraw: () => this.setState(s => ({ draw: !s.draw })),
+      drawBg: this.state.draw ? 'oklch(0.44 0.12 156)' : 'oklch(1 0 0 / 0.95)',
+      drawFg: this.state.draw ? 'oklch(0.99 0.01 140)' : 'oklch(0.3 0.008 150)',
+      filters: ['For sale', 'Under $500K', '4+ beds', 'New build'].map(label => ({
+        label, pick: () => this.setState({ filter: label }),
+        bg: this.state.filter === label ? ink : 'oklch(1 0 0)',
+        fg: this.state.filter === label ? 'oklch(0.98 0.01 140)' : 'oklch(0.32 0.008 150)',
+        border: this.state.filter === label ? ink : 'oklch(0.87 0.01 145)'
+      })),
+      rows: data.map((d, i) => ({
+        price: d.full, specs: d.specs, address: d.address,
+        bg: i === sel ? 'oklch(0.95 0.03 148)' : 'transparent',
+        pick: () => this.setState({ pin: i })
+      })),
+      pins: data.map((d, i) => ({
+        price: d.price, left: d.left, top: d.top,
+        z: i === sel ? 50 : 20,
+        scale: (i === sel ? 1.14 : 1) * this.state.zoom,
+        bg: i === sel ? 'oklch(0.44 0.12 156)' : 'oklch(1 0 0)',
+        fg: i === sel ? 'oklch(0.99 0.01 140)' : ink,
+        pick: () => this.setState({ pin: i })
+      })),
+      intents: ['Buying', 'Selling', 'Both', 'Relocating'].map(label => ({
+        label, pick: () => this.setState({ intent: label }),
+        bg: this.state.intent === label ? ink : 'oklch(1 0 0)',
+        fg: this.state.intent === label ? 'oklch(0.98 0.01 140)' : 'oklch(0.32 0.008 150)',
+        border: this.state.intent === label ? ink : 'oklch(0.86 0.01 145)'
+      })),
+      stats: [
+        { value: '18 yrs', label: 'Working the Greater Houston market' },
+        { value: '5', label: 'Core markets we know street by street' },
+        { value: '24 hrs', label: 'Typical response time on a new inquiry' },
+        { value: '100%', label: 'Of clients work with an agent, not an assistant' }
+      ],
+      areas: [
+        { name: 'Houston', note: 'Inner Loop to the Energy Corridor', count: '1,840 homes', slot: '[ Houston ]', href: 'https://go-mrealty.idxbroker.com/i/Houston' },
+        { name: 'The Woodlands', note: 'Master-planned, heavily wooded', count: '412 homes', slot: '[ The Woodlands ]', href: 'https://go-mrealty.idxbroker.com/i/The-Woodlands-TX' },
+        { name: 'Sugar Land', note: 'Established suburbs, strong schools', count: '306 homes', slot: '[ Sugar Land ]', href: 'https://go-mrealty.idxbroker.com/i/Sugar-Land-TX' },
+        { name: 'Cypress', note: 'New construction, room to grow', count: '588 homes', slot: '[ Cypress ]', href: 'https://go-mrealty.idxbroker.com/i/Cypress-TX' },
+        { name: 'Katy', note: 'Family-first, west side commute', count: '674 homes', slot: '[ Katy ]', href: 'https://go-mrealty.idxbroker.com/i/Katy' }
+      ],
+      reviews: [
+        { quote: 'We bought from Colorado without setting foot in the house. Every question got a straight answer, including the ones that talked us out of two other places.', name: 'THE FERRELLS · KATY' },
+        { quote: 'Listed Thursday, three offers by Monday. The pricing conversation up front was the whole thing.', name: 'D. OKONKWO · SUGAR LAND' },
+        { quote: 'First-time buyers, so we needed everything explained twice. Nobody made us feel like that was a problem.', name: 'ANA & RUBEN · HOUSTON' }
+      ],
+      steps: [
+        { num: '01', title: 'Get your number', body: 'A lender pre-approval before we tour, so your offer is taken seriously the first time.' },
+        { num: '02', title: 'Narrow the map', body: 'We work through commute, schools, flood zone, and tax rate until the search area is honest.' },
+        { num: '03', title: 'Tour and compare', body: 'We show you what is wrong with each house, not just what is right.' },
+        { num: '04', title: 'Offer and close', body: 'Terms, option period, repairs, and a closing date that fits your lease or your sale.' }
+      ],
+      sellPoints: [
+        { title: 'A real comparative market analysis', body: 'Closed sales, active competition, and what buyers in your price band are choosing instead.' },
+        { title: 'Prep that pays for itself', body: 'We tell you which repairs return money and which ones do not. Usually a short list.' },
+        { title: 'Photography and launch timing', body: 'Professional photos, floor plan, and a launch day chosen for traffic, not convenience.' }
+      ],
+      marketing: [
+        { title: 'Exposure', body: 'Full MLS syndication, social campaigns, and direct outreach to agents already working your price band.' },
+        { title: 'Showing management', body: 'Scheduled, confirmed, and followed up on. You get feedback, not silence.' },
+        { title: 'Negotiation', body: 'Offers compared side by side on price, financing, and risk of falling through, not just the top number.' }
+      ],
+      team: [
+        { name: 'Name Here', role: 'BROKER · OWNER', bio: 'Leads the brokerage and works listings across northwest Houston.', slot: '[ headshot ]' },
+        { name: 'Name Here', role: 'BUYER SPECIALIST', bio: 'Handles relocation and first-time buyers from search to closing.', slot: '[ headshot ]' },
+        { name: 'Name Here', role: 'LISTING SPECIALIST', bio: 'Pricing, prep, and marketing for sellers in Katy and Cypress.', slot: '[ headshot ]' },
+        { name: 'Name Here', role: 'CLIENT CARE', bio: 'Keeps showings, paperwork, and closing timelines on track.', slot: '[ headshot ]' }
+      ],
+      values: [
+        { title: 'Straight answers', body: 'If a house is a bad idea, we say so. It costs us a commission occasionally and it has never cost us a client.' },
+        { title: 'One point of contact', body: 'The agent you meet is the agent who runs your transaction start to finish.' },
+        { title: 'Local, not regional', body: 'We turn down business outside the metro rather than pretend to know a market we do not.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

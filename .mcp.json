@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "realtyapi": {
+      "type": "http",
+      "url": "https://mcp.realtyapi.io/mcp"
+    }
+  }
+}
