@@ -935,7 +935,13 @@ a.pin-popup-inner:hover { color: inherit; transform: translateY(-2px); }
 
 /* --- gallery --- */
 
-.gallery { padding: 16px var(--gutter) 0; display: flex; flex-direction: column; gap: 10px; }
+/* Half width on desktop — at full bleed the hero photo swamped the listing
+   detail below it. min() keeps it edge-to-edge on narrow screens, where half
+   a phone width would be uselessly small. */
+.gallery {
+  padding: 16px var(--gutter) 0; display: flex; flex-direction: column; gap: 10px;
+  max-width: min(620px, 100%); box-sizing: content-box;
+}
 .gallery-main {
   position: relative; display: block; width: 100%; padding: 0; overflow: hidden;
   border-radius: 18px; background: var(--surface-soft); aspect-ratio: 16 / 9; cursor: zoom-in;
@@ -956,7 +962,7 @@ a.pin-popup-inner:hover { color: inherit; transform: translateY(-2px); }
 .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gallery-thumb.is-active { border-color: var(--brand-mid); }
 .gallery-empty {
-  margin: 16px var(--gutter) 0; aspect-ratio: 16 / 7; border-radius: 18px;
+  margin: 16px var(--gutter) 0; max-width: min(620px, 100%); aspect-ratio: 16 / 7; border-radius: 18px;
   background: var(--hatch); display: grid; place-items: center;
 }
 
@@ -1053,3 +1059,43 @@ table.history td.up { color: var(--brand-bright); }
   .lightbox-nav { font-size: 30px; }
   .listing-map { height: 300px; }
 }
+
+/* "Search this area" — appears once the map has moved off the current results. */
+.search-area-pill {
+  position: absolute; top: 26px; left: 50%; transform: translateX(-50%);
+  z-index: 45; padding: 12px 24px; border-radius: 24px;
+  background: var(--brand); color: var(--on-brand);
+  font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em;
+  box-shadow: 0 6px 20px oklch(0.4 0.02 155 / 0.22);
+  animation: pill-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  white-space: nowrap;
+}
+.search-area-pill:hover { background: var(--brand-bright); }
+@keyframes pill-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (max-width: 900px) {
+  /* The hero is a normal column on mobile, so anchor to the map strip. */
+  .hero-map { position: relative; }
+  .search-area-pill { top: 14px; font-size: 13px; padding: 10px 20px; }
+}
+
+/* Collapsed grip carries a label — it is the only way back to the list. */
+.panel-grip { overflow: visible; }
+.panel-grip-hint {
+  position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+  padding: 7px 13px; border-radius: 18px;
+  background: var(--brand); color: var(--on-brand);
+  font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; white-space: nowrap;
+  box-shadow: 0 3px 12px oklch(0.4 0.02 155 / 0.18);
+  opacity: 0; pointer-events: none;
+  transition: opacity 200ms ease 120ms;
+}
+.hero.panel-closed .panel-grip-hint { opacity: 1; }
+.hero.panel-closed .panel-grip {
+  /* Nudge it clear of the viewport edge once the panel has slid away. */
+  border-radius: 0 12px 12px 0;
+}
+@media (max-width: 900px) { .panel-grip-hint { display: none; } }

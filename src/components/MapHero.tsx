@@ -40,6 +40,15 @@ export default function MapHero({ initialListings, initialSource }: Props) {
   const [view, setView] = useState<"map" | "list">("map");
   /** Desktop: collapse the panel via the edge grip to open up the map. */
   const [panelOpen, setPanelOpen] = useState(true);
+  /**
+   * Where the map is now, once it differs from what the results describe.
+   * Panning no longer searches on its own: every search costs API credits, and
+   * an idle drag across Houston would have spent one per pause. The visitor
+   * asks for it instead.
+   */
+  const [pendingArea, setPendingArea] = useState<
+    { lat: number; lng: number; radiusMiles: number } | null
+  >(null);
   /** The headline card yields to the map a few seconds after load. */
   const [introVisible, setIntroVisible] = useState(true);
 
@@ -59,6 +68,9 @@ export default function MapHero({ initialListings, initialSource }: Props) {
   const listRef = useRef<HTMLDivElement | null>(null);
   /** Redfin ids already asked about, so we never re-spend a credit on one. */
   const photoAsked = useRef<Set<string>>(new Set());
+  /** Latest listings, so the enrichment effect can read them without depending on them. */
+  const listingsRef = useRef(listings);
+  listingsRef.current = listings;
   /**
    * Ids whose photo lookup has finished. Until then a Redfin card is *pending*,
    * not photo-less — saying "No photo available" mid-flight is a lie.
@@ -105,6 +117,8 @@ export default function MapHero({ initialListings, initialSource }: Props) {
           lastQueryRef.current = params;
           setPage(1);
           setHasMore(Boolean(data.nextPage));
+          setPendingArea(null);
+          setPanelOpen(true);
           railRef.current?.scrollTo({ top: 0 });
         }
       } catch {
@@ -208,9 +222,16 @@ export default function MapHero({ initialListings, initialSource }: Props) {
    * a few at a time. Lazy rather than up-front: the page paints immediately and
    * we only spend a credit on listings someone actually sees. Server-side these
    * are cached for a week, so repeat viewers cost nothing.
+   *
+   * Keyed on the set of listing ids, not the listings themselves. Depending on
+   * `listings` meant every resolved photo re-ran this effect, whose cleanup
+   * cancelled the batch still in flight — and since those ids were already
+   * marked asked, they were never retried and shimmered forever.
    */
+  const idsKey = listings.map((l) => l.id).join(",");
+
   useEffect(() => {
-    const pending = listings.filter(
+    const pending = listingsRef.current.filter(
       (l) =>
         l.provider === "redfin" &&
         !l.photo &&
@@ -221,12 +242,16 @@ export default function MapHero({ initialListings, initialSource }: Props) {
     if (!pending.length) return;
 
     let cancelled = false;
+    const claimed = new Set<string>();
 
     (async () => {
       const CONCURRENCY = 3;
       for (let i = 0; i < pending.length && !cancelled; i += CONCURRENCY) {
         const batch = pending.slice(i, i + CONCURRENCY);
-        batch.forEach((l) => photoAsked.current.add(l.id));
+        batch.forEach((l) => {
+          photoAsked.current.add(l.id);
+          claimed.add(l.id);
+        });
 
         const resolved = await Promise.all(
           batch.map(async (l) => {
@@ -244,7 +269,8 @@ export default function MapHero({ initialListings, initialSource }: Props) {
 
         if (cancelled) return;
 
-        // Mark the whole batch resolved, hit or miss.
+        // This batch is settled either way, so stop calling it pending.
+        batch.forEach((l) => claimed.delete(l.id));
         setPhotoDone((prev) => {
           const next = new Set(prev);
           batch.forEach((l) => next.add(l.id));
@@ -265,13 +291,31 @@ export default function MapHero({ initialListings, initialSource }: Props) {
 
     return () => {
       cancelled = true;
+      // Release anything we claimed but never settled, so a later run retries
+      // it instead of leaving the card shimmering with nothing coming.
+      claimed.forEach((id) => photoAsked.current.delete(id));
     };
-  }, [listings]);
+  }, [idsKey]);
 
+  /**
+   * Reading the map and reading the list are different jobs, so the panel steps
+   * aside the moment the map is grabbed. The grip stays put with a label, which
+   * is the only affordance for getting the list back.
+   */
+  const handleInteract = useCallback(() => setPanelOpen(false), []);
+
+  // Offer the search; don't run it.
   const handleMoveEnd = useCallback(
-    (c: { lat: number; lng: number; radiusMiles: number }) => void load(filter, "", c),
-    [filter, load],
+    (c: { lat: number; lng: number; radiusMiles: number }) => setPendingArea(c),
+    [],
   );
+
+  const searchThisArea = useCallback(() => {
+    if (!pendingArea) return;
+    submittedRef.current = "";
+    setQuery("");
+    void load(filter, "", pendingArea);
+  }, [filter, load, pendingArea]);
 
   /**
    * A Realtor listing without a photo has none. A Redfin one is only photo-less
@@ -285,6 +329,18 @@ export default function MapHero({ initialListings, initialSource }: Props) {
     return "none";
   };
 
+  /**
+   * Listings with a photo first; ones we know have none sink to the bottom.
+   *
+   * Keyed on photoState rather than `photo` directly, so a Redfin card whose
+   * lookup is still in flight keeps its place instead of sinking and then
+   * jumping back once its photo arrives. Only a resolved, empty lookup moves.
+   * Array.prototype.sort is stable, so everything else holds its order.
+   */
+  const ordered = [...listings]
+    .map((l, i) => ({ l, i }))
+    .sort((a, b) => Number(photoState(a.l) === "none") - Number(photoState(b.l) === "none"));
+
   const active = listings[selected] ?? listings[0];
 
   /** Nearest-first, so the rail reads as "this home, then its neighbours". */
@@ -297,11 +353,16 @@ export default function MapHero({ initialListings, initialSource }: Props) {
     }));
     if (!a) return rows;
     return rows.sort((x, y) => {
+      // The selected home always leads, photo or not — it is what was clicked.
       if (x.i === selected) return -1;
       if (y.i === selected) return 1;
+
+      const blank = Number(photoState(x.l) === "none") - Number(photoState(y.l) === "none");
+      if (blank !== 0) return blank;
+
       return (x.dist ?? Number.POSITIVE_INFINITY) - (y.dist ?? Number.POSITIVE_INFINITY);
     });
-  }, [listings, selected]);
+  }, [listings, selected, photoDone]);
 
   if (!active) return null;
 
@@ -313,6 +374,7 @@ export default function MapHero({ initialListings, initialSource }: Props) {
           selected={selected}
           onSelect={setSelected}
           onMoveEnd={handleMoveEnd}
+          onInteract={handleInteract}
         />
       </div>
 
@@ -340,6 +402,9 @@ export default function MapHero({ initialListings, initialSource }: Props) {
               onClick={() => setPanelOpen((v) => !v)}
             >
               <span className="panel-grip-lines" aria-hidden />
+              <span className="panel-grip-hint" aria-hidden>
+                {listings.length} listings
+              </span>
               <span className="sr-only">
                 {panelOpen ? "Collapse listings and show the full map" : "Show listings"}
               </span>
@@ -430,7 +495,7 @@ export default function MapHero({ initialListings, initialSource }: Props) {
               ref={listRef}
               onScroll={onListScroll}
             >
-              {listings.map((l, i) => (
+              {ordered.map(({ l, i }) => (
                 <button
                   key={l.id}
                   type="button"
@@ -485,6 +550,12 @@ export default function MapHero({ initialListings, initialSource }: Props) {
           </div>
         </div>
       </div>
+
+      {pendingArea && (
+        <button type="button" className="search-area-pill" onClick={searchThisArea}>
+          {loading ? "Searching\u2026" : "Search this area"}
+        </button>
+      )}
 
       <div className="view-toggle" role="group" aria-label="Choose map or list view">
         <button type="button" aria-pressed={view === "map"} onClick={() => setView("map")}>

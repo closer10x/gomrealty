@@ -12,6 +12,8 @@ type Props = {
   onSelect: (index: number) => void;
   /** Fired after the user finishes panning/zooming, for a viewport refetch. */
   onMoveEnd?: (centre: { lat: number; lng: number; radiusMiles: number }) => void;
+  /** Fired as soon as the user grabs the map, so the panel can get out of the way. */
+  onInteract?: () => void;
 };
 
 /**
@@ -42,7 +44,7 @@ function viewportRadiusMiles(map: maplibregl.Map): number {
   return Math.min(Math.max((2 * R * Math.asin(Math.min(1, Math.sqrt(a)))) / 2, 1), 50);
 }
 
-export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }: Props) {
+export default function PropertyMap({ listings, selected, onSelect, onMoveEnd, onInteract }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
@@ -50,8 +52,10 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }:
 
   const onSelectRef = useRef(onSelect);
   const onMoveEndRef = useRef(onMoveEnd);
+  const onInteractRef = useRef(onInteract);
   onSelectRef.current = onSelect;
   onMoveEndRef.current = onMoveEnd;
+  onInteractRef.current = onInteract;
 
   const userMoved = useRef(false);
   const moveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,9 +82,16 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }:
     ro.observe(container.current);
     m.once("load", () => m.resize());
 
-    m.on("dragstart", () => (userMoved.current = true));
+    m.on("dragstart", () => {
+      userMoved.current = true;
+      onInteractRef.current?.();
+    });
     m.on("zoomstart", (e) => {
-      if ((e as { originalEvent?: unknown }).originalEvent) userMoved.current = true;
+      // originalEvent distinguishes a real gesture from our own fitBounds.
+      if ((e as { originalEvent?: unknown }).originalEvent) {
+        userMoved.current = true;
+        onInteractRef.current?.();
+      }
     });
 
     // Debounced: a search costs an API credit, so don't fire mid-pan.
