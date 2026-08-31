@@ -5,6 +5,7 @@ import ListingGallery from "@/components/ListingGallery";
 import ListingMap from "@/components/ListingMap";
 import { getListing } from "@/lib/listing";
 import { SITE } from "@/lib/content";
+import { rdcpix } from "@/lib/imageSizes";
 
 export const revalidate = 86400;
 
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: l.photos[0] ? [{ url: l.photos[0] }] : undefined,
+      images: l.photos[0] ? [{ url: rdcpix(l.photos[0], "od") ?? l.photos[0] }] : undefined,
     },
   };
 }
@@ -91,7 +92,7 @@ export default async function ListingPage({ params }: Props) {
       ? { floorSize: { "@type": "QuantitativeValue", value: l.sqft, unitCode: "FTK" } }
       : {}),
     numberOfRooms: l.beds ?? undefined,
-    photo: l.photos.slice(0, 6),
+    photo: l.photos.slice(0, 6).map((p) => rdcpix(p, "od") ?? p),
     ...(l.price
       ? {
           offers: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { rdcpix, rdcpixSrcSet } from "@/lib/imageSizes";
 
 /**
  * Listing gallery. One large frame with a thumbnail strip, plus a full-screen
@@ -49,7 +50,12 @@ export default function ListingGallery({ photos, address }: { photos: string[]; 
           onClick={() => setOpen(true)}
           aria-label={`View photo ${index + 1} of ${count} full screen`}
         >
-          <img src={photos[index]} alt={`${address} — photo ${index + 1}`} />
+          <img
+            src={rdcpix(photos[index], "od") ?? photos[index]}
+            srcSet={rdcpixSrcSet(photos[index])}
+            sizes="(max-width: 900px) 100vw, 1140px"
+            alt={`${address} — photo ${index + 1}`}
+          />
           <span className="gallery-count">
             {index + 1} / {count}
           </span>
@@ -66,7 +72,7 @@ export default function ListingGallery({ photos, address }: { photos: string[]; 
                 aria-current={i === index}
                 onClick={() => setIndex(i)}
               >
-                <img src={p} alt="" loading="lazy" />
+                <img src={rdcpix(p, "m") ?? p} alt="" loading="lazy" />
               </button>
             ))}
           </div>
@@ -81,7 +87,11 @@ export default function ListingGallery({ photos, address }: { photos: string[]; 
           <button type="button" className="lightbox-nav prev" onClick={() => go(-1)} aria-label="Previous photo">
             ‹
           </button>
-          <img className="lightbox-img" src={photos[index]} alt={`${address} — photo ${index + 1}`} />
+          <img
+            className="lightbox-img"
+            src={rdcpix(photos[index], "rd") ?? photos[index]}
+            alt={`${address} — photo ${index + 1}`}
+          />
           <button type="button" className="lightbox-nav next" onClick={() => go(1)} aria-label="Next photo">
             ›
           </button>

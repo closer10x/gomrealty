@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Listing } from "@/lib/realty";
+import { rdcpix } from "@/lib/imageSizes";
 
 type Props = {
   listings: Listing[];
@@ -179,7 +180,7 @@ export default function PropertyMap({ listings, selected, onSelect, onMoveEnd }:
     const img = document.createElement("span");
     img.className = l.photo ? "pin-popup-photo" : "pin-popup-photo is-empty";
     if (l.photo) {
-      img.style.backgroundImage = `url(${l.photo})`;
+      img.style.backgroundImage = `url(${rdcpix(l.photo, "x")})`;
     } else {
       // Some listings genuinely carry no photos; say so rather than showing
       // an empty grey box that reads as a loading failure.

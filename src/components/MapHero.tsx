@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FILTERS, FILTER_QUERY, IDX } from "@/lib/content";
 import type { Listing } from "@/lib/realty";
+import { rdcpix } from "@/lib/imageSizes";
 
 /** maplibre-gl is ~250 kB, so keep it out of the initial homepage bundle. */
 const PropertyMap = dynamic(() => import("./PropertyMap"), {
@@ -439,7 +440,9 @@ export default function MapHero({ initialListings, initialSource }: Props) {
                 >
                   <span
                     className={l.photo ? "result-thumb" : "result-thumb is-empty"}
-                    style={l.photo ? { backgroundImage: `url(${l.photo})` } : undefined}
+                    style={
+                      l.photo ? { backgroundImage: `url(${rdcpix(l.photo, "x")})` } : undefined
+                    }
                     aria-hidden
                   >
                     {photoState(l) === "none" && <span className="no-photo-mini">No photo</span>}
@@ -519,7 +522,7 @@ export default function MapHero({ initialListings, initialSource }: Props) {
             <>
               <div
                 className="active-photo"
-                style={l.photo ? { backgroundImage: `url(${l.photo})` } : undefined}
+                style={l.photo ? { backgroundImage: `url(${rdcpix(l.photo, "od")})` } : undefined}
               >
                 {photoState(l) === "none" && (
                   <span className="no-photo">No photo available</span>

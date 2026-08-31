@@ -8,6 +8,7 @@
  */
 
 import "server-only";
+import { rdcpix } from "./imageSizes";
 
 export const REALTY_BASE =
   process.env.REALTYAPI_BASE_URL?.replace(/\/+$/, "") ?? "https://realtor.realtyapi.io";
@@ -309,15 +310,12 @@ export function formatPriceFull(price: number | null): string {
 }
 
 /**
- * rdcpix serves one photo at several sizes, chosen by a suffix before `.jpg`:
- * `s` is 120x80, `t` 140x105, `m`/`l` ~300px, `x` ~460px, `od` the original
- * (~1024px). Realtor.com listings hand us `od` already, but new-home records on
- * nh.rdcpix.com arrive as `s`, which is far too small for a card and renders
- * visibly blurry. Ask for the original on any rdcpix URL.
+ * Normalises listing photos up to the 1024px variant. New-home records on
+ * nh.rdcpix.com arrive as `s` (120x80), which is far too small for a card.
+ * Consumers narrow it back down per usage via rdcpix() in lib/imageSizes.
  */
 export function fullSizePhoto(url: string | null): string | null {
-  if (!url || !/^https?:\/\/[^/]*\brdcpix\.com\//.test(url)) return url;
-  return url.replace(/(-[a-z]\d+)(?:od|[a-z])?\.jpg$/i, "$1od.jpg");
+  return rdcpix(url, "od");
 }
 
 export function normalizeListing(raw: Record<string, unknown>): Listing {
