@@ -12,37 +12,64 @@ type Props = {
 /**
  * "Schedule a call" opens the calendar in place rather than navigating away.
  *
- * Built on the native <dialog> so focus trapping, Esc-to-close, inert
- * background and the backdrop come from the platform instead of being
- * reimplemented. /book still exists as a real page for direct links and for
- * anyone arriving without JS.
+ * Built on the native <dialog> for the backdrop and inert background, but the
+ * open/closed state lives in React and every dismissal path funnels through
+ * `closeDialog`. The obvious alternative — letting the dialog's own `close`
+ * event drive state — is not dependable: some engines do not fire it, and a
+ * missed event would strand the body scroll lock with no way to release it.
+ * Driving state ourselves means the DOM and React cannot disagree.
+ *
+ * /book still exists as a real page, for direct links and for anyone arriving
+ * without JS.
  */
 export default function BookingDialog({ children, className }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
 
-  const close = useCallback(() => {
-    ref.current?.close();
+  const closeDialog = useCallback(() => {
+    setOpen(false);
+    if (ref.current?.open) ref.current.close();
   }, []);
 
-  function openDialog() {
+  const openDialog = useCallback(() => {
     setOpen(true);
-    ref.current?.showModal();
-  }
+    if (!ref.current?.open) ref.current?.showModal();
+  }, []);
 
-  // `close` fires for Esc as well as our own calls, so state stays in step
-  // however the dialog was dismissed. Unmounting the calendar on close means
-  // reopening starts from a clean step 1 rather than a stale confirmation.
+  // Esc, handled here rather than left to the platform, so it takes the same
+  // path as the close button and the backdrop.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeDialog();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, closeDialog]);
+
+  // If a browser *does* dismiss the dialog natively, catch up rather than
+  // leaving React thinking it is still open.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const onClose = () => setOpen(false);
+    const onCancel = (e: Event) => {
+      e.preventDefault();
+      closeDialog();
+    };
     el.addEventListener("close", onClose);
-    return () => el.removeEventListener("close", onClose);
-  }, []);
+    el.addEventListener("cancel", onCancel);
+    return () => {
+      el.removeEventListener("close", onClose);
+      el.removeEventListener("cancel", onCancel);
+    };
+  }, [closeDialog]);
 
   // A modal <dialog> makes the page inert but does not stop it scrolling
-  // underneath.
+  // underneath. Tied to `open`, so the lock is released on every close path.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -65,9 +92,11 @@ export default function BookingDialog({ children, className }: Props) {
         // Clicking the backdrop lands on the dialog element itself; clicks on
         // the content bubble from a child, so this closes only on the backdrop.
         onClick={(e) => {
-          if (e.target === ref.current) close();
+          if (e.target === ref.current) closeDialog();
         }}
       >
+        {/* Unmounted while closed, so reopening starts at step 1 rather than on
+            a stale confirmation from the last booking. */}
         {open && (
           <div className="booking-modal-inner">
             <div className="booking-modal-head">
@@ -78,7 +107,7 @@ export default function BookingDialog({ children, className }: Props) {
               <button
                 type="button"
                 className="booking-close"
-                onClick={close}
+                onClick={closeDialog}
                 aria-label="Close"
               >
                 ×
