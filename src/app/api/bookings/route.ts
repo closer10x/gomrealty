@@ -9,7 +9,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { formatDayLong, formatTime, dayKey, isValidSlot, slotEnd } from "@/lib/booking";
+import { formatDayLong, formatTime, formatZoneAbbr, dayKey, isValidSlot, slotEnd } from "@/lib/booking";
+import { sendBookingConfirmation, sendBookingNotification } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -109,10 +110,45 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not book that call" }, { status: 500 });
   }
 
+  // Pre-formatted in office time so the confirmation screen agrees with the
+  // calendar the visitor just used.
+  const summary = `${formatDayLong(dayKey(new Date(startIso)))} at ${formatTime(startIso)}`;
+
+  // The row is already committed, so mail is best-effort from here. Both
+  // messages go out together and neither can reject the response — a booking
+  // that saved is a real booking even if the mail API is having a bad day.
+  const mail = {
+    id: data.id as string,
+    start: startIso,
+    end: slotEnd(startIso),
+    summary,
+    zone: formatZoneAbbr(startIso),
+    fullName: fullName!,
+    email: email!,
+    phone: row.phone,
+    topic,
+    message: row.message,
+  };
+
+  const [confirmation, notification] = await Promise.all([
+    sendBookingConfirmation(mail),
+    sendBookingNotification(mail),
+  ]);
+
+  for (const [label, r] of [["confirmation", confirmation], ["notification", notification]] as const) {
+    if (r.sent) continue;
+    // Skipped means "not configured yet"; error means it was tried and failed,
+    // which is the case worth chasing because someone is expecting a call.
+    if (r.skipped) console.warn(`[bookings] ${label} email skipped: ${r.skipped}`);
+    else console.error(`[bookings] ${label} email FAILED for ${email}: ${r.error}`);
+  }
+
   console.info("[bookings] confirmed", {
     id: data.id,
     startsAt: data.starts_at,
     email,
+    confirmationSent: confirmation.sent,
+    notificationSent: notification.sent,
   });
 
   return NextResponse.json({
@@ -120,8 +156,8 @@ export async function POST(req: NextRequest) {
     id: data.id,
     start: startIso,
     end: slotEnd(startIso),
-    // Pre-formatted in office time so the confirmation screen agrees with the
-    // calendar the visitor just used.
-    summary: `${formatDayLong(dayKey(new Date(startIso)))} at ${formatTime(startIso)}`,
+    summary,
+    // Lets the confirmation screen say "check your email" only when it is true.
+    emailed: confirmation.sent,
   });
 }

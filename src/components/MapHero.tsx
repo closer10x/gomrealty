@@ -56,6 +56,8 @@ export default function MapHero({ initialListings, initialSource }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const railRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+  /** Redfin ids already asked about, so we never re-spend a credit on one. */
+  const photoAsked = useRef<Set<string>>(new Set());
   /** The viewport/filter that the current page sequence belongs to. */
   const lastQueryRef = useRef<URLSearchParams | null>(null);
 
@@ -194,6 +196,63 @@ export default function MapHero({ initialListings, initialSource }: Props) {
       : el.scrollTop + el.clientHeight >= el.scrollHeight - 400;
     if (nearEnd) void loadMore();
   }, [loadMore]);
+
+  /**
+   * Redfin's search payload has no photo URLs, so resolve them after render,
+   * a few at a time. Lazy rather than up-front: the page paints immediately and
+   * we only spend a credit on listings someone actually sees. Server-side these
+   * are cached for a week, so repeat viewers cost nothing.
+   */
+  useEffect(() => {
+    const pending = listings.filter(
+      (l) =>
+        l.provider === "redfin" &&
+        !l.photo &&
+        l.propertyId &&
+        l.listingId &&
+        !photoAsked.current.has(l.id),
+    );
+    if (!pending.length) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const CONCURRENCY = 3;
+      for (let i = 0; i < pending.length && !cancelled; i += CONCURRENCY) {
+        const batch = pending.slice(i, i + CONCURRENCY);
+        batch.forEach((l) => photoAsked.current.add(l.id));
+
+        const resolved = await Promise.all(
+          batch.map(async (l) => {
+            try {
+              const res = await fetch(
+                `/api/redfin/photo?property_id=${l.propertyId}&listing_id=${l.listingId}`,
+              );
+              const data = await res.json();
+              return typeof data.photo === "string" ? { id: l.id, photo: data.photo } : null;
+            } catch {
+              return null;
+            }
+          }),
+        );
+
+        if (cancelled) return;
+        const found = resolved.filter((r): r is { id: string; photo: string } => r !== null);
+        if (found.length) {
+          setListings((prev) =>
+            prev.map((l) => {
+              const hit = found.find((f) => f.id === l.id);
+              return hit ? { ...l, photo: hit.photo } : l;
+            }),
+          );
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [listings]);
 
   const handleMoveEnd = useCallback(
     (c: { lat: number; lng: number; radiusMiles: number }) => void load(filter, "", c),

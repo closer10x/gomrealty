@@ -230,6 +230,9 @@ export type Listing = {
   id: string;
   /** Which upstream this came from. */
   provider?: "realtor" | "redfin";
+  /** Redfin needs both ids to resolve a photo via /detailsbyid. */
+  propertyId?: string | null;
+  listingId?: string | null;
   price: number | null;
   priceShort: string;
   priceFull: string;
@@ -425,9 +428,14 @@ export function normalizeRedfinListing(home: Record<string, unknown>): Listing {
 
   const url = pick(home, "url");
 
+  const propertyId = pick(home, "propertyId");
+  const listingId = pick(home, "listingId");
+
   return {
-    id: `rf-${String(pick(home, "propertyId", "listingId") ?? line)}`,
+    id: `rf-${String(propertyId ?? listingId ?? line)}`,
     provider: "redfin",
+    propertyId: propertyId ? String(propertyId) : null,
+    listingId: listingId ? String(listingId) : null,
     price,
     priceShort: formatPriceShort(price),
     priceFull: formatPriceFull(price),

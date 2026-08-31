@@ -1,30 +1,61 @@
 import Link from "next/link";
+import BookingDialog from "@/components/BookingDialog";
 import MapHero from "@/components/MapHero";
 import { REVIEWS, SOFI_LAKES, STATS } from "@/lib/content";
 import { getMarkets } from "@/lib/markets";
 import { SAMPLE_LISTINGS } from "@/lib/sampleListings";
-import { normalizeListings, realtyConfigured, realtyFetch } from "@/lib/realty";
+import {
+  SEARCH_FETCH_COUNT,
+  mergeListings,
+  normalizeListings,
+  normalizeRedfinListings,
+  realtyConfigured,
+  realtyFetch,
+  redfinFetch,
+} from "@/lib/realty";
 import type { Listing } from "@/lib/realty";
 
 export const revalidate = 3600;
 
 async function loadListings(): Promise<{ listings: Listing[]; source: "realtyapi" | "sample" }> {
   if (!realtyConfigured()) return { listings: SAMPLE_LISTINGS, source: "sample" };
-  try {
-    const payload = await realtyFetch("/search/bylocation", {
-      location: process.env.NEXT_PUBLIC_DEFAULT_LOCATION ?? "Houston, TX",
-      resultCount: 7,
-      sortOrder: "Recommended",
-      searchType: "For_Sale",
-    }, { revalidate: 3600 });
-    const listings = normalizeListings(payload, 7);
-    return listings.length
-      ? { listings, source: "realtyapi" }
-      : { listings: SAMPLE_LISTINGS, source: "sample" };
-  } catch {
-    // Never let a billing or network failure take the homepage down.
-    return { listings: SAMPLE_LISTINGS, source: "sample" };
-  }
+
+  const location = process.env.NEXT_PUBLIC_DEFAULT_LOCATION ?? "Houston, TX";
+  const COUNT = 12;
+
+  // Blend both providers here too, so the first paint matches what a search
+  // returns. Querying only Realtor server-side meant Redfin appeared only
+  // after the visitor interacted.
+  const [realtorRes, redfinRes] = await Promise.allSettled([
+    realtyFetch(
+      "/search/bylocation",
+      {
+        location: location.toLowerCase(),
+        resultCount: SEARCH_FETCH_COUNT,
+        sortOrder: "Recommended",
+        searchType: "For_Sale",
+      },
+      { revalidate: 3600 },
+    ),
+    redfinFetch(
+      "/search/bylocation",
+      {
+        locationName: location.toLowerCase(),
+        resultCount: SEARCH_FETCH_COUNT,
+        searchType: "For_Sale",
+      },
+      { revalidate: 3600 },
+    ),
+  ]);
+
+  const realtor = realtorRes.status === "fulfilled" ? normalizeListings(realtorRes.value, COUNT) : [];
+  const redfin =
+    redfinRes.status === "fulfilled" ? normalizeRedfinListings(redfinRes.value, COUNT) : [];
+
+  const listings = mergeListings([realtor, redfin], COUNT);
+  return listings.length
+    ? { listings, source: "realtyapi" }
+    : { listings: SAMPLE_LISTINGS, source: "sample" };
 }
 
 export default async function HomePage() {
@@ -165,9 +196,7 @@ export default async function HomePage() {
           Fifteen minutes on the phone is usually enough to tell you where you stand. No script, no
           pressure.
         </p>
-        <Link href="/book" className="btn-cta">
-          Schedule a call
-        </Link>
+        <BookingDialog className="btn-cta">Schedule a call</BookingDialog>
       </section>
     </>
   );
