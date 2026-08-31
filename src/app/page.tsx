@@ -1,11 +1,12 @@
 import Link from "next/link";
 import MapHero from "@/components/MapHero";
-import { AREAS, REVIEWS, STATS } from "@/lib/content";
+import { REVIEWS, STATS } from "@/lib/content";
+import { getMarkets } from "@/lib/markets";
 import { SAMPLE_LISTINGS } from "@/lib/sampleListings";
 import { normalizeListings, realtyConfigured, realtyFetch } from "@/lib/realty";
 import type { Listing } from "@/lib/realty";
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 async function loadListings(): Promise<{ listings: Listing[]; source: "realtyapi" | "sample" }> {
   if (!realtyConfigured()) return { listings: SAMPLE_LISTINGS, source: "sample" };
@@ -15,7 +16,7 @@ async function loadListings(): Promise<{ listings: Listing[]; source: "realtyapi
       resultCount: 7,
       sortOrder: "Recommended",
       searchType: "For_Sale",
-    });
+    }, { revalidate: 86400 });
     const listings = normalizeListings(payload, 7);
     return listings.length
       ? { listings, source: "realtyapi" }
@@ -27,7 +28,7 @@ async function loadListings(): Promise<{ listings: Listing[]; source: "realtyapi
 }
 
 export default async function HomePage() {
-  const { listings, source } = await loadListings();
+  const [{ listings, source }, markets] = await Promise.all([loadListings(), getMarkets()]);
 
   return (
     <>
@@ -55,14 +56,22 @@ export default async function HomePage() {
           </p>
         </div>
         <div className="area-grid">
-          {AREAS.map((a) => (
-            <a className="area" key={a.name} href={a.href}>
-              <div className="area-img">
-                <span className="area-count">{a.count}</span>
-                <span className="slot">{a.slot}</span>
+          {markets.map((m) => (
+            <a className="area" key={m.name} href={m.href}>
+              <div
+                className="area-img"
+                style={m.photo ? { backgroundImage: `url(${m.photo})` } : undefined}
+              >
+                {/* No count rather than an invented one when the market is unknown. */}
+                {m.count !== null && (
+                  <span className="area-count">
+                    {m.count.toLocaleString("en-US")} active
+                  </span>
+                )}
+                {!m.photo && <span className="slot">{m.slot}</span>}
               </div>
-              <div className="area-name">{a.name}</div>
-              <div className="area-note">{a.note}</div>
+              <div className="area-name">{m.name}</div>
+              <div className="area-note">{m.note}</div>
             </a>
           ))}
         </div>
