@@ -190,8 +190,12 @@ export async function realtyCredits(): Promise<{ limit: number | null; remaining
  * safe and turns "Katy, TX" / "katy, tx" / " Katy,  TX " into one cache entry.
  */
 
-/** Seconds to cache a visitor search. Listings don't move hour to hour. */
-export const SEARCH_TTL = 21_600; // 6h
+/**
+ * Seconds to cache a visitor search. Tuned for the 85k-credit plan: 15 minutes
+ * keeps results fresh enough for a listing search while still collapsing the
+ * repeat queries and map nudges that dominate real traffic.
+ */
+export const SEARCH_TTL = 900; // 15m
 
 /**
  * Always ask upstream for this many results and slice locally, so a request

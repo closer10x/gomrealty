@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   RealtyApiError,
   SEARCH_FETCH_COUNT,
+  SEARCH_TTL,
   canonicalLocation,
   mergeListings,
   normalizeListings,
@@ -91,34 +92,45 @@ export async function GET(req: NextRequest) {
 
     const realtorPromise = wantRealtor
       ? byCoords
-        ? realtyFetch("/search/bycoordinates", {
-            ...query,
-            latitude: lat,
-            longitude: lng,
-            radius,
-          })
+        ? realtyFetch(
+            "/search/bycoordinates",
+            { ...query, latitude: lat, longitude: lng, radius },
+            { revalidate: SEARCH_TTL },
+          )
         : zip
-          ? realtyFetch("/search/byzip", { ...query, zipCode: zip })
-          : realtyFetch("/search/bylocation", { ...query, location: canonicalLocation(location) })
+          ? realtyFetch("/search/byzip", { ...query, zipCode: zip }, { revalidate: SEARCH_TTL })
+          : realtyFetch(
+              "/search/bylocation",
+              { ...query, location: canonicalLocation(location) },
+              { revalidate: SEARCH_TTL },
+            )
       : Promise.reject(new Error("skipped"));
 
     // Redfin uses its own parameter names for the same concepts.
     const redfinPromise = wantRedfin
       ? byCoords
-        ? redfinFetch("/search/bycoordinates", {
-            latitude: lat,
-            longitude: lng,
-            radius,
-            resultCount: Math.max(limit, SEARCH_FETCH_COUNT),
-            page,
-            searchType: query.searchType,
-          })
-        : redfinFetch("/search/bylocation", {
-            locationName: zip ?? canonicalLocation(location),
-            resultCount: Math.max(limit, SEARCH_FETCH_COUNT),
-            page,
-            searchType: query.searchType,
-          })
+        ? redfinFetch(
+            "/search/bycoordinates",
+            {
+              latitude: lat,
+              longitude: lng,
+              radius,
+              resultCount: Math.max(limit, SEARCH_FETCH_COUNT),
+              page,
+              searchType: query.searchType,
+            },
+            { revalidate: SEARCH_TTL },
+          )
+        : redfinFetch(
+            "/search/bylocation",
+            {
+              locationName: zip ?? canonicalLocation(location),
+              resultCount: Math.max(limit, SEARCH_FETCH_COUNT),
+              page,
+              searchType: query.searchType,
+            },
+            { revalidate: SEARCH_TTL },
+          )
       : Promise.reject(new Error("skipped"));
 
     const [realtorRes, redfinRes] = await Promise.allSettled([realtorPromise, redfinPromise]);
@@ -150,7 +162,13 @@ export async function GET(req: NextRequest) {
         },
         listings: live ? listings : SAMPLE_LISTINGS.slice(0, limit),
       },
-      { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
+      {
+        // Match the upstream TTL so the CDN absorbs repeat searches instead of
+        // waking the function and spending credits again.
+        headers: {
+          "Cache-Control": `public, s-maxage=${SEARCH_TTL}, stale-while-revalidate=86400`,
+        },
+      },
     );
   } catch (err) {
     const status = err instanceof RealtyApiError ? err.status : 502;

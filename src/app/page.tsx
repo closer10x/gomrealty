@@ -6,7 +6,7 @@ import { SAMPLE_LISTINGS } from "@/lib/sampleListings";
 import { normalizeListings, realtyConfigured, realtyFetch } from "@/lib/realty";
 import type { Listing } from "@/lib/realty";
 
-export const revalidate = 86400;
+export const revalidate = 3600;
 
 async function loadListings(): Promise<{ listings: Listing[]; source: "realtyapi" | "sample" }> {
   if (!realtyConfigured()) return { listings: SAMPLE_LISTINGS, source: "sample" };
@@ -16,7 +16,7 @@ async function loadListings(): Promise<{ listings: Listing[]; source: "realtyapi
       resultCount: 7,
       sortOrder: "Recommended",
       searchType: "For_Sale",
-    }, { revalidate: 86400 });
+    }, { revalidate: 3600 });
     const listings = normalizeListings(payload, 7);
     return listings.length
       ? { listings, source: "realtyapi" }

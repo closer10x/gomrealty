@@ -40,7 +40,7 @@ export async function getMarkets(): Promise<Market[]> {
       realtyFetch<{ total?: number }>(
         "/search/bylocation",
         { location: `${a.name}, TX`, resultCount: 1, searchType: "For_Sale" },
-        { revalidate: 86400 },
+        { revalidate: 21600 },
       ),
     ),
   );

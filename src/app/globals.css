@@ -180,23 +180,10 @@ button { font: inherit; color: inherit; background: none; border: none; padding:
        viewport room = 100vh - 107px (header + panel top) - 40px bottom
      less 176px of fixed card chrome (search row + filters + actions). */
   --list-h: 196px;
-  --list-h-open: max(240px, min(calc(max(88vh, 820px) - 256px), calc(100vh - 323px)));
 }
-.hero-panel.is-expanded { --list-h: var(--list-h-open); }
 .hero-card {
   background: var(--surface); border: 1px solid var(--line-soft); border-radius: 18px;
   padding: 22px 24px 20px; margin-bottom: 16px; box-shadow: var(--shadow-md);
-  overflow: hidden; max-height: 60rem;
-  transition:
-    opacity 300ms ease, transform 300ms ease,
-    max-height 420ms ease 120ms, margin-bottom 420ms ease 120ms,
-    padding 420ms ease 120ms, border-width 420ms ease 120ms,
-    visibility 0s linear 540ms;
-}
-/* Retires 3s after load so the map and the listings get the space. */
-.hero-card.is-hidden {
-  opacity: 0; transform: translateY(-8px); visibility: hidden; pointer-events: none;
-  max-height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; border-width: 0;
 }
 .hero-title { font-size: 58px; line-height: 1; letter-spacing: -0.035em; color: var(--ink-strong); margin: 0 0 16px; }
 .hero-title em { font-style: normal; color: oklch(0.44 0.13 154); }
@@ -587,7 +574,7 @@ textarea.field { resize: vertical; }
   .data-note { position: static; display: inline-block; margin: 14px var(--gutter) 0; }
   .active-card { position: relative; right: 0; bottom: 0; width: auto; margin: 16px var(--gutter) 0; }
   /* Hero is height:auto here and the panel is in flow, so track the viewport only. */
-  .hero-panel { --list-h: 260px; --list-h-open: max(360px, calc(100vh - 380px)); }
+  .hero-panel { --list-h: 260px; }
 
   .stats { grid-template-columns: repeat(2, 1fr); }
   .stat { padding: 26px 20px; }
@@ -685,15 +672,6 @@ textarea.field { resize: vertical; }
 }
 .hero-card, .search-card { transition: opacity 200ms ease; }
 
-/* The headline card retires after a few seconds and lets the search card rise. */
-.hero-card.is-gone {
-  opacity: 0; max-height: 0; margin-bottom: 0;
-  padding-top: 0; padding-bottom: 0; border-width: 0;
-  overflow: hidden; pointer-events: none;
-  transition: opacity 260ms ease, max-height 420ms cubic-bezier(0.4, 0, 0.2, 1),
-              margin-bottom 420ms cubic-bezier(0.4, 0, 0.2, 1),
-              padding 420ms cubic-bezier(0.4, 0, 0.2, 1);
-}
 .hero-card {
   /* flex: none — in the panel's flex column this card must never shrink below
      its content, or the headline spills outside its own box. The result list
@@ -701,6 +679,19 @@ textarea.field { resize: vertical; }
   flex: none;
   max-height: 520px;
   transition: opacity 200ms ease, max-height 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The headline card retires 3s after load and lets the search card rise into
+   the space. Declared after the .hero-card override above so it wins the
+   cascade outright rather than relying on specificity alone. */
+.hero-card.is-gone {
+  opacity: 0; max-height: 0; margin-bottom: 0;
+  padding-top: 0; padding-bottom: 0; border-width: 0;
+  overflow: hidden; pointer-events: none; visibility: hidden;
+  transition: opacity 260ms ease, max-height 420ms cubic-bezier(0.4, 0, 0.2, 1),
+              margin-bottom 420ms cubic-bezier(0.4, 0, 0.2, 1),
+              padding 420ms cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0s linear 420ms;
 }
 
 /* Positioning context for the grip. */
