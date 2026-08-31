@@ -28,9 +28,14 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(Math.max(Number(sp.get("limit") ?? 7) || 7, 1), 50);
 
   // Map panning searches by viewport centre + radius rather than by name.
-  const lat = Number(sp.get("latitude"));
-  const lng = Number(sp.get("longitude"));
-  const byCoords = Number.isFinite(lat) && Number.isFinite(lng);
+  // Check the params are actually present: Number(null) is 0, which is finite,
+  // so testing isFinite alone sends every search to lat 0/lng 0.
+  const latRaw = sp.get("latitude");
+  const lngRaw = sp.get("longitude");
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
+  const byCoords =
+    latRaw !== null && lngRaw !== null && Number.isFinite(lat) && Number.isFinite(lng);
   const radius = Math.min(Math.max(Number(sp.get("radius")) || 5, 0.5), 50);
 
   if (!realtyConfigured()) {
