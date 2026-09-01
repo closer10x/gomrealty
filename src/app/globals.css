@@ -198,9 +198,13 @@ button { font: inherit; color: inherit; background: none; border: none; padding:
 .result {
   display: flex; gap: 13px; padding: 10px; border-radius: 12px; width: 100%;
   text-align: left; background: transparent; transition: background 120ms ease;
+  /* A row is a link to the home, so it must not take the global link colour. */
+  color: inherit;
 }
 .result[aria-current="true"] { background: var(--surface-sel); }
-.result:hover { background: var(--surface-hover); }
+.result:hover, .result:active { background: var(--surface-hover); color: inherit; }
+.result-go { margin-left: auto; align-self: center; flex: none; color: var(--ink-dimmer); font-size: 16px; }
+.result:hover .result-go { color: var(--brand); }
 .result-thumb { width: 88px; height: 68px; flex: none; border-radius: 9px; background: var(--hatch-tight); background-size: cover; background-position: center; }
 .result-body { min-width: 0; padding-top: 2px; }
 .result-price { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 2px; }

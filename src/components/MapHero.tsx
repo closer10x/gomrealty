@@ -496,36 +496,88 @@ export default function MapHero({ initialListings, initialSource }: Props) {
               ref={listRef}
               onScroll={onListScroll}
             >
-              {ordered.map(({ l, i }) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  className="result"
-                  aria-current={i === selected}
-                  onClick={() => setSelected(i)}
-                >
-                  <span
-                    className={l.photo ? "result-thumb" : "result-thumb is-empty"}
-                    style={
-                      l.photo ? { backgroundImage: `url(${rdcpix(l.photo, "x")})` } : undefined
-                    }
-                    aria-hidden
+              {ordered.map(({ l, i }) => {
+                const body = (
+                  <>
+                    <span
+                      className={l.photo ? "result-thumb" : "result-thumb is-empty"}
+                      style={
+                        l.photo ? { backgroundImage: `url(${rdcpix(l.photo, "x")})` } : undefined
+                      }
+                      aria-hidden
+                    >
+                      {photoState(l) === "none" && <span className="no-photo-mini">No photo</span>}
+                    </span>
+                    <span className="result-body">
+                      <span className="result-price" style={{ display: "block" }}>
+                        {l.priceFull}
+                      </span>
+                      <span className="result-specs" style={{ display: "block" }}>
+                        {l.specs}
+                      </span>
+                      <span className="result-addr" style={{ display: "block" }}>
+                        {l.address}
+                      </span>
+                    </span>
+                    {(l.slug || l.href) && (
+                      <span className="result-go" aria-hidden>
+                        {"\u2192"}
+                      </span>
+                    )}
+                  </>
+                );
+
+                /**
+                 * A row opens the home. It used to only move the map pin, which
+                 * on a phone in list view is invisible — the map isn't on screen
+                 * — so tapping a listing looked broken. Selecting as well keeps
+                 * the map in step for the source-site case, which opens a tab.
+                 */
+                const select = () => setSelected(i);
+
+                if (l.slug) {
+                  return (
+                    <Link
+                      key={l.id}
+                      href={`/homes/${l.slug}`}
+                      className="result"
+                      aria-current={i === selected}
+                      onClick={select}
+                    >
+                      {body}
+                    </Link>
+                  );
+                }
+
+                if (l.href) {
+                  return (
+                    <a
+                      key={l.id}
+                      href={l.href}
+                      className="result"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-current={i === selected}
+                      onClick={select}
+                    >
+                      {body}
+                    </a>
+                  );
+                }
+
+                // No page to open — the row can still point the map at it.
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    className="result"
+                    aria-current={i === selected}
+                    onClick={select}
                   >
-                    {photoState(l) === "none" && <span className="no-photo-mini">No photo</span>}
-                  </span>
-                  <span className="result-body">
-                    <span className="result-price" style={{ display: "block" }}>
-                      {l.priceFull}
-                    </span>
-                    <span className="result-specs" style={{ display: "block" }}>
-                      {l.specs}
-                    </span>
-                    <span className="result-addr" style={{ display: "block" }}>
-                      {l.address}
-                    </span>
-                  </span>
-                </button>
-              ))}
+                    {body}
+                  </button>
+                );
+              })}
 
               {hasMore && (
                 <button
